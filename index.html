@@ -329,8 +329,11 @@
   <script src="js/config.js"></script>
   <script src="data/questions.js"></script>
 
+  <!-- Supabase JS client (loaded from CDN; all DB access is via SECURITY DEFINER RPCs) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <!-- Dev preview only: lets you visit ?screen=role to inspect any screen
-       on the live site before logic is wired up. Safe to leave in. -->
+       on the live site without going through the flow. Safe to leave in. -->
   <script>
     (function () {
       var params = new URLSearchParams(window.location.search);
@@ -344,5 +347,8 @@
       target.hidden = false;
     })();
   </script>
+
+  <!-- App controller (navigation, PIN flow, session restore) -->
+  <script src="js/app.js"></script>
 </body>
 </html>

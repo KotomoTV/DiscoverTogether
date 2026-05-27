@@ -154,6 +154,23 @@ button {
 
 .screen[hidden] { display: none !important; }
 
+/* Subtle slide+fade in on screen entry (~280ms). */
+@keyframes dt-screen-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(14px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.screen.is-entering {
+  animation: dt-screen-enter 280ms ease-out both;
+  will-change: transform, opacity;
+}
+
 /* -------------------------------------------------------------------------
    Typography
    ------------------------------------------------------------------------- */
@@ -632,6 +649,26 @@ h3, .h3 { font-size: var(--fs-h3); }
 .status-card .display {
   margin-bottom: var(--space-3);
   color: var(--color-primary);
+}
+
+/* -------------------------------------------------------------------------
+   Inline form errors & busy buttons
+   ------------------------------------------------------------------------- */
+
+.form-error {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  background: rgba(168, 90, 79, 0.08);
+  border: 1px solid rgba(168, 90, 79, 0.30);
+  border-radius: var(--radius-md);
+  color: var(--color-no-way);
+  font-size: var(--fs-small);
+  line-height: 1.45;
+}
+
+.btn.is-busy {
+  position: relative;
+  pointer-events: none;
 }
 
 /* -------------------------------------------------------------------------

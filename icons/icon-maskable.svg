@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Discover Together">
+  <!-- Maskable: full-bleed background, mark within safe inner ~40% radius -->
+  <rect width="64" height="64" fill="#722F37"/>
+  <path d="M32 44 C32 44 19 36 19 27 C19 22.6 22.4 19.3 26.5 19.3 C28.7 19.3 30.7 20.4 32 22.1 C33.3 20.4 35.3 19.3 37.5 19.3 C41.6 19.3 45 22.4 45 27 C45 36 32 44 32 44 Z" fill="#FBF7F4"/>
+</svg>

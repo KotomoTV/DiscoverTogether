@@ -32,6 +32,103 @@
   var RELAX_HOLD_MS = 4000;
   var CODE_CREATE_MAX_ATTEMPTS = 8;
 
+  // Per-question icons rendered inside the gradient card. All shapes are
+  // outline-only (fill="none", stroke="currentColor"), so they pick up
+  // the white `color` set in CSS. New names: add an entry here and use
+  // the name as an `icon: '…'` field in data/questions.js.
+  var Q_ICONS = {
+    bath:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M4 12h17v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-3z"/>'
+      + '<path d="M6 12V7a2 2 0 0 1 2-2c1 0 1.9.7 2.1 1.7"/>'
+      + '<line x1="3" y1="12" x2="21" y2="12"/>'
+      + '<line x1="7"  y1="20" x2="6"  y2="22"/>'
+      + '<line x1="17" y1="20" x2="18" y2="22"/>'
+      + '</svg>',
+    droplet:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M12 3 C 12 3 5.5 10.5 5.5 15.5 a 6.5 6.5 0 0 0 13 0 C 18.5 10.5 12 3 12 3 Z"/>'
+      + '</svg>',
+    sparkles:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M9 4 L 10 7 L 13 8 L 10 9 L 9 12 L 8 9 L 5 8 L 8 7 Z"/>'
+      + '<path d="M17 11 L 17.7 13 L 19.5 13.6 L 17.7 14.2 L 17 16 L 16.3 14.2 L 14.5 13.6 L 16.3 13 Z"/>'
+      + '<path d="M14 18 L 14.5 19.3 L 15.8 19.7 L 14.5 20 L 14 21.3 L 13.5 20 L 12.2 19.7 L 13.5 19.3 Z"/>'
+      + '</svg>',
+    bed:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M3 18v-9"/>'
+      + '<path d="M21 18v-4a3 3 0 0 0-3-3H3"/>'
+      + '<line x1="3"  y1="18" x2="21" y2="18"/>'
+      + '<circle cx="7.5" cy="11" r="1.7"/>'
+      + '</svg>',
+    message:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.7 8.7 0 0 1-4-1L3 20l1.2-4A8.4 8.4 0 1 1 21 11.5z"/>'
+      + '</svg>',
+    plane:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M21 3 L 11 13"/>'
+      + '<path d="M21 3 L 14.5 21 L 11 13 L 3 9.5 Z"/>'
+      + '</svg>',
+    'eye-off':
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M9.88 9.88a3 3 0 0 0 4.24 4.24"/>'
+      + '<path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>'
+      + '<path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>'
+      + '<line x1="3" y1="3" x2="21" y2="21"/>'
+      + '</svg>',
+    mask:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M3 9 C 3 7 5 6 7.5 6 c 1.6 0 3 .5 4.5 1.7 C 13.5 6.5 14.9 6 16.5 6 C 19 6 21 7 21 9 c 0 5-4 9-9 9 s -9-4 -9-9 Z"/>'
+      + '<line x1="7"  y1="11" x2="9.5"  y2="11"/>'
+      + '<line x1="14.5" y1="11" x2="17" y2="11"/>'
+      + '</svg>',
+    music:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M9 18V5l12-2v13"/>'
+      + '<circle cx="6"  cy="18" r="3"/>'
+      + '<circle cx="18" cy="16" r="3"/>'
+      + '</svg>',
+    moon:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'
+      + '</svg>',
+    tv:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+      + '<rect x="3" y="7" width="18" height="12" rx="2"/>'
+      + '<polyline points="8,3 12,7 16,3"/>'
+      + '</svg>',
+    camera:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M3 8h3.5l2-3h7l2 3H21 a1 1 0 0 1 1 1v10 a1 1 0 0 1-1 1H3 a1 1 0 0 1-1-1V9 a1 1 0 0 1 1-1z"/>'
+      + '<circle cx="12" cy="13.5" r="3.5"/>'
+      + '</svg>',
+    glass:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M7 4h10l-1 7a4 4 0 0 1-8 0L7 4z"/>'
+      + '<line x1="12" y1="15" x2="12" y2="20"/>'
+      + '<line x1="9"  y1="20" x2="15" y2="20"/>'
+      + '</svg>',
+    tree:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M12 3 L 7 9 L 9.5 9 L 5.5 14 L 8.5 14 L 4 19 L 20 19 L 15.5 14 L 18.5 14 L 14.5 9 L 17 9 Z"/>'
+      + '<line x1="12" y1="19" x2="12" y2="22"/>'
+      + '</svg>',
+    heart:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M12 21s-7-4.4-9-9c-1.4-3.2.6-7 4-7 2 0 3.6 1.2 5 3 1.4-1.8 3-3 5-3 3.4 0 5.4 3.8 4 7-2 4.6-9 9-9 9z"/>'
+      + '</svg>',
+    flame:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M12 2c1.2 3.5-.4 5.4-1.5 6.7-1.2 1.4-2.2 2.9-2.2 5 0 1.4.6 2.6 1.5 3.4-.7-.3-2-1.3-2.3-3.3-.7 1.6-1.3 3-1 4.6.4 2.7 2.9 4.6 5.5 4.6 3.5 0 6.5-2.8 6.5-6.5 0-6.5-6.5-9-6.5-14.5z"/>'
+      + '</svg>'
+  };
+
+  function iconSvgFor(name) {
+    return Q_ICONS[name] || Q_ICONS.heart;
+  }
+
   var SVG_LOGO = ''
     + '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 58" role="img" aria-label="Crave">'
     +   '<defs>'
@@ -615,12 +712,24 @@
     var q = state.deck[state.qIndex];
     if (!q) return;
     var tile = $('[data-slot="q-tile"]');
+    var card = $('#screen-question .q-card');
+    var icon = $('[data-slot="q-icon"]');
     var text = $('[data-slot="q-text"]');
     var progress = $('[data-slot="q-progress"]');
     var bar = $('[data-slot="q-progress-bar"]');
     var back = $('[data-action="question-back"]');
 
+    if (icon) icon.innerHTML = iconSvgFor(q.icon);
     if (text) text.textContent = q.text;
+    // Scale the question text down for long phrases rather than letting it
+    // overflow. Uppercase rendering adds ~12% width on average, so the
+    // thresholds are slightly tighter than the raw character count.
+    if (card) {
+      card.classList.remove('is-long', 'is-extra-long');
+      var len = (q.text || '').length;
+      if (len > 70)      card.classList.add('is-extra-long');
+      else if (len > 48) card.classList.add('is-long');
+    }
     if (progress) {
       progress.textContent = pad2(state.qIndex + 1) + ' / ' + pad2(state.deck.length);
     }

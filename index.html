@@ -312,16 +312,19 @@
 
       <p class="q-stem">What do you think about</p>
 
-      <article class="q-tile" data-slot="q-tile">
-        <p class="q-text" id="question-prompt" data-slot="q-text">…</p>
-        <p class="q-privacy">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" aria-hidden="true">
-            <rect x="5" y="11" width="14" height="9" rx="2"/>
-            <path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/>
-          </svg>
-          <span>Private to you</span>
-        </p>
-      </article>
+      <div class="q-card-frame" data-slot="q-tile">
+        <article class="q-card">
+          <span class="q-icon" data-slot="q-icon" aria-hidden="true"></span>
+          <p class="q-text" id="question-prompt" data-slot="q-text">…</p>
+          <p class="q-privacy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" aria-hidden="true">
+              <rect x="5" y="11" width="14" height="9" rx="2"/>
+              <path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/>
+            </svg>
+            <span>Private to you</span>
+          </p>
+        </article>
+      </div>
 
       <div class="rating-bar" role="group" aria-label="Your answer">
         <button type="button" class="rating-btn rating-btn--no-way" data-response="1" aria-label="No way">

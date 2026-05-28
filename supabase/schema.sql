@@ -19,22 +19,29 @@
 
 -- =========================================================================
 -- Extensions
+--
+-- Supabase keeps pgcrypto in the dedicated `extensions` schema, NOT in
+-- public. Every reference to a pgcrypto function in this file is
+-- schema-qualified as `extensions.<fn>(…)`, and every SECURITY DEFINER
+-- function declares `set search_path = public, extensions` so callers
+-- that omit the qualifier still resolve. Idempotent on re-run.
 -- =========================================================================
 
-create extension if not exists "pgcrypto";  -- gen_random_uuid, gen_random_bytes
+create schema if not exists extensions;
+create extension if not exists "pgcrypto" with schema extensions;
 
 -- =========================================================================
 -- Tables
 -- =========================================================================
 
 create table if not exists public.couples (
-  id          uuid        primary key default gen_random_uuid(),
+  id          uuid        primary key default extensions.gen_random_uuid(),
   pin_hash    text        not null unique,
   created_at  timestamptz not null default now()
 );
 
 create table if not exists public.users (
-  id             uuid        primary key default gen_random_uuid(),
+  id             uuid        primary key default extensions.gen_random_uuid(),
   couple_id      uuid        not null references public.couples(id) on delete cascade,
   name           text        not null check (char_length(name) between 1 and 80),
   role           text        not null check (role in ('her', 'him')),
@@ -47,13 +54,20 @@ create table if not exists public.users (
 create index if not exists users_couple_id_idx on public.users (couple_id);
 
 create table if not exists public.answers (
-  id           uuid        primary key default gen_random_uuid(),
+  id           uuid        primary key default extensions.gen_random_uuid(),
   user_id      uuid        not null references public.users(id) on delete cascade,
   question_id  int         not null check (question_id between 1 and 55),
   response     int         not null check (response between 1 and 4),
   answered_at  timestamptz not null default now(),
   unique (user_id, question_id)
 );
+
+-- Make sure existing deployments pick up the qualified defaults (no-op
+-- on fresh installs because `create table if not exists` above already
+-- set them).
+alter table public.couples alter column id set default extensions.gen_random_uuid();
+alter table public.users   alter column id set default extensions.gen_random_uuid();
+alter table public.answers alter column id set default extensions.gen_random_uuid();
 
 create index if not exists answers_user_id_idx on public.answers (user_id);
 
@@ -77,11 +91,12 @@ alter table public.answers enable row level security;
 create or replace function public._generate_session_token()
 returns text
 language plpgsql
+set search_path = public, extensions
 as $$
 declare
   v_bytes bytea;
 begin
-  v_bytes := gen_random_bytes(32);
+  v_bytes := extensions.gen_random_bytes(32);
   return replace(replace(replace(encode(v_bytes, 'base64'), '+', '-'), '/', '_'), '=', '');
 end;
 $$;
@@ -91,7 +106,7 @@ create or replace function public._user_for_token(p_session_token text)
 returns public.users
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_user public.users;
@@ -127,7 +142,7 @@ create or replace function public.prepare_join(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_couple_id uuid;
@@ -186,7 +201,7 @@ create or replace function public.commit_join(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_couple_id  uuid;
@@ -257,7 +272,7 @@ create or replace function public.get_my_state(p_session_token text)
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_me      public.users;
@@ -315,7 +330,7 @@ create or replace function public.submit_answer(
 returns void
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_me public.users;
@@ -350,7 +365,7 @@ create or replace function public.complete_questionnaire(p_session_token text)
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_me public.users;
@@ -391,7 +406,7 @@ create or replace function public.get_results(p_session_token text)
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_me      public.users;
@@ -481,7 +496,7 @@ create or replace function public.delete_couple_data(p_session_token text)
 returns void
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_me public.users;

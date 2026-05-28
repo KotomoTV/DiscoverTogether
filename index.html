@@ -131,6 +131,26 @@
     </section>
 
     <!-- =====================================================================
+         Screen 4c: PIN Created (shown only to the first partner, right
+         after commit_join succeeds for an `empty` PIN). Gives them the
+         PIN to share with their partner before continuing.
+         ===================================================================== -->
+    <section class="screen" id="screen-pin-created" aria-labelledby="pin-created-title" hidden>
+      <div class="screen-header">
+        <h2 id="pin-created-title">PIN created!</h2>
+        <p class="lead muted">Share this PIN with your partner so they can join:</p>
+      </div>
+
+      <p class="pin-display" data-slot="pin-value" aria-live="polite">0000</p>
+
+      <p class="small center">Your partner enters the same PIN on their phone and picks the opposite role.</p>
+
+      <div class="screen-actions">
+        <button type="button" class="btn btn--primary" data-action="pin-created-continue">Continue</button>
+      </div>
+    </section>
+
+    <!-- =====================================================================
          Screen 4b: Partner Confirmation
          ===================================================================== -->
     <section class="screen" id="screen-confirm-partner" aria-labelledby="confirm-title" hidden>

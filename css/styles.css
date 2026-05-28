@@ -268,10 +268,24 @@ a { color: var(--logo-right); }
   margin-top: 2px;
 }
 
-.brand-tagline {
-  font-size: var(--fs-body);
+.welcome-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  text-align: center;
+}
+.welcome-headline {
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: 0.005em;
+}
+.welcome-subline {
   color: var(--text-secondary);
-  margin-top: 2px;
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 /* -------------------------------------------------------------------------
@@ -280,7 +294,6 @@ a { color: var(--logo-right); }
 
 .h-screen   { font-size: var(--fs-heading); font-weight: 500; color: var(--text); line-height: 1.25; }
 .h-big      { font-size: var(--fs-big);     font-weight: 500; color: var(--text); line-height: 1.1; }
-.h-relax    { font-size: 26px;              font-weight: 500; color: var(--text); line-height: 1.2; }
 
 .muted        { color: var(--text-secondary); font-size: var(--fs-body); line-height: 1.55; }
 .micro        { color: var(--text-tertiary); font-size: var(--fs-caption); line-height: 1.5; }
@@ -544,16 +557,21 @@ a { color: var(--logo-right); }
    Ready + Relax screens
    ------------------------------------------------------------------------- */
 
-.glow-disc {
-  width: 76px;
-  height: 76px;
-  border-radius: 50%;
-  background: #1A1216;
-  display: inline-flex;
-  align-items: center;
+.couple-illustration {
+  display: flex;
   justify-content: center;
+  align-items: center;
   margin: 0 auto;
-  box-shadow: 0 0 34px rgba(255, 46, 116, 0.60);
+  padding: var(--sp-4) 0;
+  /* drop-shadow follows the silhouette, not a rectangular box. */
+  filter:
+    drop-shadow(0 0 26px rgba(255, 46, 116, 0.42))
+    drop-shadow(0 0 12px rgba(255, 106, 44, 0.32));
+}
+.couple-illustration svg {
+  width: min(220px, 62vw);
+  height: auto;
+  display: block;
 }
 
 .ready-text {
@@ -561,6 +579,29 @@ a { color: var(--logo-right); }
   flex-direction: column;
   align-items: center;
   gap: var(--sp-2);
+}
+
+.relax-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.relax-stem {
+  color: var(--text);
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.005em;
+  text-align: center;
+  margin-top: var(--sp-2);
+}
+.relax-subtitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .relax-tap {
@@ -695,7 +736,8 @@ a { color: var(--logo-right); }
   background-image: var(--heat-gradient);
   background-size: 400% 100%;
   background-repeat: no-repeat;        /* required — prevents 1px pink sliver on NO WAY */
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  /* No border. The button's edge is the box-shadow per variant below. */
+  border: 0;
   cursor: pointer;
   transition: transform 90ms var(--ease), box-shadow var(--t-base) var(--ease);
   -webkit-tap-highlight-color: transparent;
@@ -726,24 +768,20 @@ a { color: var(--logo-right); }
 
 .rating-btn--no-way {
   background-position: 0% 50%;
-  box-shadow: none;
-  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 8px rgba(90, 90, 100, 0.20);
 }
 .rating-btn--think {
   background-position: 33.33% 50%;
-  box-shadow: 0 0 13px rgba(150, 40, 58, 0.6);
-  border-color: rgba(214, 90, 110, 0.30);
+  box-shadow: 0 0 16px rgba(150, 40, 58, 0.75);
 }
 .rating-btn--maybe {
   background-position: 66.66% 50%;
-  box-shadow: 0 0 19px rgba(230, 80, 40, 0.65);
-  border-color: rgba(255, 120, 80, 0.35);
+  box-shadow: 0 0 22px rgba(230, 80, 40, 0.78);
 }
 .rating-btn--anytime {
   background-position: 100% 50%;
-  box-shadow: 0 0 30px rgba(255, 46, 116, 0.95),
-              inset 0 0 18px rgba(255, 120, 170, 0.35);
-  border-color: rgba(255, 120, 170, 0.60);
+  box-shadow: 0 0 32px rgba(255, 46, 116, 1),
+              inset 0 0 18px rgba(255, 120, 170, 0.42);
 }
 .rating-btn--anytime .rating-btn-icon { height: 26px; }
 .rating-btn--anytime .rating-btn-icon svg { width: 22px; height: 22px; }

@@ -27,10 +27,22 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
   />
 
-  <link rel="stylesheet" href="css/styles.css?v=11" />
+  <link rel="stylesheet" href="css/styles.css?v=12" />
 </head>
 <body>
   <main class="app" id="app">
+
+    <!-- Persistent "Reset this device" control. Floats at the top-right
+         corner of the app shell, visible on every screen. Confirms,
+         then clears local state (localStorage + caches + service
+         workers) and reloads to the bare URL. Never touches the
+         server: the couple and the partner's answers are untouched. -->
+    <button type="button" class="app-reset" data-action="reset" aria-label="Reset this device">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true">
+        <polyline points="21 12 21 6 15 6"/>
+        <path d="M21 6a9 9 0 1 0 0 12"/>
+      </svg>
+    </button>
 
     <!-- =====================================================================
          Screen 1: Welcome / How it works
@@ -79,7 +91,6 @@
 
       <div class="screen-actions">
         <button type="button" class="btn btn--primary" data-action="welcome-start">Get started</button>
-        <button type="button" class="btn btn--quiet btn--quiet-danger" data-action="welcome-reset" hidden>Sign out of this device</button>
       </div>
     </section>
 
@@ -88,15 +99,17 @@
          ===================================================================== -->
     <section class="screen" id="screen-name" aria-labelledby="name-title" hidden>
       <header class="top-bar">
-        <span class="brand-lockup">
-          <span class="brand-mark" data-logo="name-top" aria-hidden="true"></span>
-          <span class="brand-wordmark">Crave</span>
-        </span>
-        <button type="button" class="icon-btn" data-action="back" aria-label="Back">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
-            <path d="M15 18l-6-6 6-6"/>
-          </svg>
-        </button>
+        <div class="top-bar-left">
+          <button type="button" class="icon-btn" data-action="back" aria-label="Back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+              <path d="M15 18l-6-6 6-6"/>
+            </svg>
+          </button>
+          <span class="brand-lockup">
+            <span class="brand-mark" data-logo="name-top" aria-hidden="true"></span>
+            <span class="brand-wordmark">Crave</span>
+          </span>
+        </div>
       </header>
 
       <div class="screen-body">
@@ -130,15 +143,17 @@
          ===================================================================== -->
     <section class="screen" id="screen-gender" aria-labelledby="gender-title" hidden>
       <header class="top-bar">
-        <span class="brand-lockup">
-          <span class="brand-mark" data-logo="gender-top" aria-hidden="true"></span>
-          <span class="brand-wordmark">Crave</span>
-        </span>
-        <button type="button" class="icon-btn" data-action="back" aria-label="Back">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
-            <path d="M15 18l-6-6 6-6"/>
-          </svg>
-        </button>
+        <div class="top-bar-left">
+          <button type="button" class="icon-btn" data-action="back" aria-label="Back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+              <path d="M15 18l-6-6 6-6"/>
+            </svg>
+          </button>
+          <span class="brand-lockup">
+            <span class="brand-mark" data-logo="gender-top" aria-hidden="true"></span>
+            <span class="brand-wordmark">Crave</span>
+          </span>
+        </div>
       </header>
 
       <div class="screen-body">
@@ -178,15 +193,17 @@
          ===================================================================== -->
     <section class="screen" id="screen-code" aria-labelledby="code-title" hidden>
       <header class="top-bar">
-        <span class="brand-lockup">
-          <span class="brand-mark" data-logo="code-top" aria-hidden="true"></span>
-          <span class="brand-wordmark">Crave</span>
-        </span>
-        <button type="button" class="icon-btn" data-action="back" aria-label="Back">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
-            <path d="M15 18l-6-6 6-6"/>
-          </svg>
-        </button>
+        <div class="top-bar-left">
+          <button type="button" class="icon-btn" data-action="back" aria-label="Back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+              <path d="M15 18l-6-6 6-6"/>
+            </svg>
+          </button>
+          <span class="brand-lockup">
+            <span class="brand-mark" data-logo="code-top" aria-hidden="true"></span>
+            <span class="brand-wordmark">Crave</span>
+          </span>
+        </div>
       </header>
 
       <div class="screen-body">
@@ -294,17 +311,22 @@
          ===================================================================== -->
     <section class="screen screen--question" id="screen-question" aria-labelledby="question-prompt" hidden>
       <header class="top-bar top-bar--question">
-        <button type="button" class="icon-btn" data-action="question-back" aria-label="Undo last answer">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
-            <path d="M15 18l-6-6 6-6"/>
-          </svg>
-        </button>
-        <span class="brand-lockup">
-          <span class="brand-mark" data-logo="question-top" aria-hidden="true"></span>
-          <span class="brand-wordmark">Crave</span>
-        </span>
-        <span class="q-count" data-slot="q-progress" aria-live="polite">01 / 36</span>
+        <div class="top-bar-left">
+          <button type="button" class="icon-btn" data-action="question-back" aria-label="Undo last answer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+              <path d="M15 18l-6-6 6-6"/>
+            </svg>
+          </button>
+          <span class="brand-lockup">
+            <span class="brand-mark" data-logo="question-top" aria-hidden="true"></span>
+            <span class="brand-wordmark">Crave</span>
+          </span>
+        </div>
       </header>
+
+      <div class="q-meta">
+        <span class="q-count" data-slot="q-progress" aria-live="polite">01 / 36</span>
+      </div>
 
       <div class="progress-bar" aria-hidden="true">
         <span class="progress-bar-fill" data-slot="q-progress-bar"></span>
@@ -372,14 +394,6 @@
           <span class="brand-mark" data-logo="result-top" aria-hidden="true"></span>
           <span class="brand-wordmark">Crave</span>
         </span>
-        <button type="button" class="icon-btn" data-action="result-share" aria-label="Share results">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
-            <circle cx="18" cy="5"  r="3"/>
-            <circle cx="6"  cy="12" r="3"/>
-            <circle cx="18" cy="19" r="3"/>
-            <path d="M8.6 10.6l6.8-4.2M8.6 13.4l6.8 4.2"/>
-          </svg>
-        </button>
       </header>
 
       <div class="screen-body screen-body--result" data-slot="result-body">
@@ -388,6 +402,7 @@
 
       <div class="screen-actions" data-slot="result-actions" hidden>
         <button type="button" class="btn btn--primary" data-action="result-pick">Pick where to start</button>
+        <button type="button" class="btn btn--quiet" data-action="result-share">Share results</button>
         <button type="button" class="btn btn--quiet btn--quiet-danger" data-action="result-delete">Delete all our data</button>
       </div>
     </section>
@@ -398,13 +413,13 @@
        these files when the version bumps, so a phone that cached an
        earlier deck doesn't end up answering different match_keys than
        its partner. Bump v= when any of these files changes. -->
-  <script src="js/config.js?v=11"></script>
-  <script src="data/questions.js?v=11"></script>
+  <script src="js/config.js?v=12"></script>
+  <script src="data/questions.js?v=12"></script>
 
   <!-- Supabase JS client (loaded from CDN; all DB access is via SECURITY DEFINER RPCs) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- App controller -->
-  <script src="js/app.js?v=11"></script>
+  <script src="js/app.js?v=12"></script>
 </body>
 </html>

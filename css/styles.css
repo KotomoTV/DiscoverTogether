@@ -664,44 +664,66 @@ a { color: var(--logo-right); }
 }
 
 .q-stem {
-  color: var(--text-secondary);
+  color: #FFFFFF;
   text-align: center;
-  font-size: var(--fs-label);
-  font-weight: 400;
-  margin-top: var(--sp-2);
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 14px;
 }
 
-.q-tile {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-card);
+/* Gradient-edge card: the outer frame IS the gradient, the inner fills the
+   body. Padding on the frame becomes the border thickness. */
+.q-card-frame {
+  background: var(--cta-gradient);
+  border-radius: 21px;
+  padding: 1.5px;
+  box-shadow: 0 0 22px rgba(255, 46, 116, 0.42);
+}
+
+.q-card {
+  background: #131015;
+  border-radius: 20px;
+  padding: 26px 20px;
   min-height: 184px;
-  padding: var(--sp-6) var(--sp-5);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: var(--sp-3);
-}
-
-.q-text {
-  font-size: var(--fs-question);
-  font-weight: 500;
-  line-height: 1.25;
-  text-align: center;
-  color: var(--text);
-  flex: 1;
-  display: flex;
   align-items: center;
   justify-content: center;
+  text-align: center;
 }
+
+.q-icon {
+  display: block;
+  width: 27px;
+  height: 27px;
+  margin: 0 auto 14px;
+  color: #FFFFFF;
+  filter: drop-shadow(0 0 10px rgba(255, 46, 116, 0.40));
+}
+.q-icon svg { display: block; width: 100%; height: 100%; }
+
+.q-text {
+  color: #FFFFFF;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  text-align: center;
+  text-transform: uppercase;
+}
+/* Scale down for unusually long questions, rather than overflowing. */
+.q-card.is-long .q-text       { font-size: 18px; }
+.q-card.is-extra-long .q-text { font-size: 16px; line-height: 1.32; }
 
 .q-privacy {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  align-self: center;
+  margin-top: 14px;
   color: var(--text-tertiary);
   font-size: var(--fs-caption);
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 @keyframes q-tile-enter {
@@ -712,8 +734,8 @@ a { color: var(--logo-right); }
   from { opacity: 1; transform: translate3d(0,  0, 0); }
   to   { opacity: 0; transform: translate3d(0,-12px, 0); }
 }
-.q-tile.is-entering { animation: q-tile-enter var(--t-fast) var(--ease) both; }
-.q-tile.is-exiting  { animation: q-tile-exit  var(--t-fast) var(--ease) both; }
+[data-slot="q-tile"].is-entering { animation: q-tile-enter var(--t-fast) var(--ease) both; }
+[data-slot="q-tile"].is-exiting  { animation: q-tile-exit  var(--t-fast) var(--ease) both; }
 
 /* Rating bar */
 .rating-bar {

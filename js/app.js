@@ -9,6 +9,15 @@
 //   - All DB access goes through Supabase RPCs in supabase/schema.sql.
 //     PostgREST errors surface inline; full error objects are logged
 //     to console.error under a [CRAVE] prefix.
+//
+// Routing contract (do not break):
+//   The initial screen on every page load is decided EXCLUSIVELY by
+//   THIS device's own localStorage entry under `crave::session::v1`.
+//   No URL query/hash is honored, no server "current session" lookup
+//   is performed without that token. A device with an empty
+//   localStorage always runs the full onboarding (name + gender +
+//   code), so a fresh second device never inherits anything from
+//   the first. See stripUrlState() and init().
 
 (function () {
   'use strict';
@@ -96,7 +105,16 @@
   function loadSession() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : null;
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      // Reject anything that doesn't carry our required field. This
+      // protects against an older shape or partial junk lurking under
+      // this key — better to start fresh than to call get_my_state with
+      // garbage and let the server decide.
+      if (!parsed || typeof parsed.sessionToken !== 'string' || parsed.sessionToken.length < 16) {
+        return null;
+      }
+      return parsed;
     } catch (e) { return null; }
   }
 
@@ -334,6 +352,32 @@
   // -----------------------------------------------------------------------
 
   function onWelcomeStart() { goto('name'); }
+
+  // Only shown on Welcome when this device already has a local session.
+  // Lets a returning user wipe THIS device's session_token (only) and
+  // start a fresh onboarding without touching anything in the database.
+  function onWelcomeReset() {
+    if (!window.confirm('Clear this device only? Your partner\'s answers stay safe.')) return;
+    clearSession();
+    state.sessionToken = null;
+    state.name = '';
+    state.gender = null;
+    state.partnerName = null;
+    state.answers = {};
+    state.deck = [];
+    state.qIndex = 0;
+    var btn = document.querySelector('[data-action="welcome-reset"]');
+    if (btn) btn.hidden = true;
+    /* eslint-disable no-console */
+    console.info('[CRAVE] welcome: local session_token wiped on user request.');
+    /* eslint-enable no-console */
+  }
+
+  function refreshWelcomeResetVisibility() {
+    var btn = document.querySelector('[data-action="welcome-reset"]');
+    if (!btn) return;
+    btn.hidden = !loadSession();
+  }
 
   function onNameInput(e) {
     setEnabled($('[data-action="name-next"]'), e.target.value.trim().length >= 1);
@@ -891,9 +935,33 @@
   // Session restore on reload
   // -----------------------------------------------------------------------
 
+  // Defensive: actively drop any URL query/hash on load. Nothing about
+  // session or screen state is ever read from the URL, so the safest
+  // posture is to evict anything that lands there (extension, share
+  // link, leftover from an old build, etc.) before init proceeds.
+  function stripUrlState() {
+    try {
+      if (window.location.search || window.location.hash) {
+        var clean = window.location.pathname;
+        window.history.replaceState(null, '', clean);
+        /* eslint-disable no-console */
+        console.info('[CRAVE] url: stripped query/hash (no URL params are honored).');
+        /* eslint-enable no-console */
+      }
+    } catch (e) { /* ignore */ }
+  }
+
   async function tryRestoreSession() {
     var saved = loadSession();
-    if (!saved || !saved.sessionToken) return false;
+    if (!saved || !saved.sessionToken) {
+      /* eslint-disable no-console */
+      console.info('[CRAVE] restore: no local session_token, will run full onboarding.');
+      /* eslint-enable no-console */
+      return false;
+    }
+    /* eslint-disable no-console */
+    console.info('[CRAVE] restore: calling get_my_state for token ending in …' + saved.sessionToken.slice(-6));
+    /* eslint-enable no-console */
     try {
       var st = await rpc('get_my_state', { p_session_token: saved.sessionToken });
       if (!st || !st.user) { clearSession(); return false; }
@@ -938,6 +1006,8 @@
 
     // Welcome
     $('[data-action="welcome-start"]').addEventListener('click', onWelcomeStart);
+    $('[data-action="welcome-reset"]').addEventListener('click', onWelcomeReset);
+    refreshWelcomeResetVisibility();
 
     // Name
     var nameInput = $('#input-name');
@@ -983,15 +1053,27 @@
 
   async function init() {
     bindEvents();
+    stripUrlState();
 
     var saved = loadSession();
     if (!saved || !saved.sessionToken) {
       // Splash already visible from the HTML default.
+      /* eslint-disable no-console */
+      console.info('[CRAVE] init: no local session → Welcome (fresh device or cleared storage).');
+      /* eslint-enable no-console */
       state.currentScreen = 'welcome';
       return;
     }
+    /* eslint-disable no-console */
+    console.info('[CRAVE] init: local session_token present → attempting resume.');
+    /* eslint-enable no-console */
     var restored = await tryRestoreSession();
-    if (!restored) goto('welcome', { skipAnim: true });
+    if (!restored) {
+      /* eslint-disable no-console */
+      console.info('[CRAVE] init: restore failed → falling back to Welcome.');
+      /* eslint-enable no-console */
+      goto('welcome', { skipAnim: true });
+    }
   }
 
   if (document.readyState === 'loading') {

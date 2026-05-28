@@ -39,7 +39,11 @@
       <div class="brand-hero">
         <span class="brand-mark brand-mark--lg" data-logo="welcome" aria-hidden="true"></span>
         <h1 class="brand-name" id="welcome-title">Crave</h1>
-        <p class="brand-tagline">What do you both really want?</p>
+      </div>
+
+      <div class="welcome-intro">
+        <p class="welcome-headline">Want to spice things up a little?</p>
+        <p class="welcome-subline">Or suggest something new to try together?</p>
       </div>
 
       <ul class="step-list">
@@ -241,13 +245,26 @@
          Screen 5: Ready?
          ===================================================================== -->
     <section class="screen screen--center" id="screen-ready" aria-labelledby="ready-title" hidden>
-      <div class="glow-disc">
-        <span class="brand-mark brand-mark--md" data-logo="ready" aria-hidden="true"></span>
+      <div class="couple-illustration">
+        <svg viewBox="0 0 160 124" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A couple leaning in together">
+          <defs>
+            <linearGradient id="crave-couple-ready" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#FF6A2C"/>
+              <stop offset="1" stop-color="#FF2E74"/>
+            </linearGradient>
+          </defs>
+          <g fill="url(#crave-couple-ready)">
+            <path d="M30 122 C30 88 43 72 62 72 C73 72 81 76 85 82 L85 122 Z"/>
+            <circle cx="62" cy="44" r="18"/>
+            <path d="M130 122 C130 86 117 70 98 70 C87 70 79 74 75 80 L75 122 Z"/>
+            <circle cx="98" cy="40" r="18"/>
+          </g>
+        </svg>
       </div>
 
       <div class="ready-text">
         <h2 id="ready-title" class="h-big">Ready?</h2>
-        <p class="muted">55 questions. Be honest.</p>
+        <p class="muted"><span data-slot="ready-count">49</span> questions. Be honest.</p>
         <p class="muted">You'll only see what you both want.</p>
       </div>
 
@@ -264,8 +281,9 @@
         <span class="glow-ring"><span class="glow-dot"></span></span>
       </button>
 
-      <div class="ready-text">
-        <h2 id="relax-title" class="h-relax">Relax… now</h2>
+      <div class="relax-text">
+        <p class="relax-stem">What do you think about…</p>
+        <h2 id="relax-title" class="relax-subtitle">Relax… now</h2>
         <p class="micro-muted">Dim the lights. Phone close.</p>
       </div>
     </section>
@@ -284,7 +302,7 @@
           <span class="brand-mark" data-logo="question-top" aria-hidden="true"></span>
           <span class="brand-wordmark">Crave</span>
         </span>
-        <span class="q-count" data-slot="q-progress" aria-live="polite">01 / 55</span>
+        <span class="q-count" data-slot="q-progress" aria-live="polite">01 / 49</span>
       </header>
 
       <div class="progress-bar" aria-hidden="true">

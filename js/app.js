@@ -250,6 +250,13 @@
         if (boxes[0]) boxes[0].focus();
       }, SCREEN_ANIM_MS);
     }
+    if (name === 'ready') {
+      // The exact deck length depends on gender; never let the placeholder
+      // "55 questions" leak through after the rebrand to a smaller deck.
+      var deckLen = state.gender ? window.craveDeckForGender(state.gender).length : 0;
+      var rc = $('#screen-ready [data-slot="ready-count"]');
+      if (rc) rc.textContent = String(deckLen);
+    }
     if (name === 'relax') {
       state.relaxTimer = window.setTimeout(function () {
         if (state.currentScreen === 'relax') startQuestionnaire();

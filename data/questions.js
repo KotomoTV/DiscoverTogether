@@ -19,8 +19,8 @@
 //
 // The 8 originally-split items each become two entries (one 'her', one 'him')
 // sharing a matchKey, so each user sees one phrasing and the result screen
-// can still pair them up. 47 'both' + 16 split entries = 63 master items;
-// each user's deck is 47 + 8 = 55 cards.
+// can still pair them up. 41 'both' + 16 split entries = 57 master items;
+// each user's deck is 41 + 8 = 49 cards.
 
 window.CRAVE_QUESTIONS = [
   // ---- Sensual Connection ----
@@ -96,18 +96,10 @@ window.CRAVE_QUESTIONS = [
     category: 'Adventure and Locations',
     text: 'having sex in a car',
     resultLabel: 'Sex in a car' },
-  { id: 'sex_in_tent', audience: 'both', matchKey: 'sex_in_tent',
-    category: 'Adventure and Locations',
-    text: 'having sex in a tent while camping',
-    resultLabel: 'Sex in a tent while camping' },
   { id: 'sex_on_boat', audience: 'both', matchKey: 'sex_on_boat',
     category: 'Adventure and Locations',
     text: 'having sex on a boat',
     resultLabel: 'Sex on a boat' },
-  { id: 'sleeper_train', audience: 'both', matchKey: 'sleeper_train',
-    category: 'Adventure and Locations',
-    text: 'having sex in a sleeper train cabin',
-    resultLabel: 'Sex in a sleeper train cabin' },
   { id: 'elevator', audience: 'both', matchKey: 'elevator',
     category: 'Adventure and Locations',
     text: 'having sex in an elevator',
@@ -126,10 +118,6 @@ window.CRAVE_QUESTIONS = [
     category: 'Outings and Venues',
     text: "getting couples' erotic massages",
     resultLabel: "Couples' erotic massages" },
-  { id: 'fantasy_hotel', audience: 'both', matchKey: 'fantasy_hotel',
-    category: 'Outings and Venues',
-    text: 'booking a themed fantasy hotel suite',
-    resultLabel: 'A themed fantasy hotel suite' },
   { id: 'strip_club', audience: 'both', matchKey: 'strip_club',
     category: 'Outings and Venues',
     text: 'going to a strip club together',
@@ -232,20 +220,8 @@ window.CRAVE_QUESTIONS = [
     category: 'Power Dynamics',
     text: 'controlling a hidden vibrator your partner is wearing in public',
     resultLabel: 'A hidden vibrator she wears in public, he controls it' },
-  { id: 'edging', audience: 'both', matchKey: 'edging',
-    category: 'Power Dynamics',
-    text: 'edging and orgasm denial',
-    resultLabel: 'Edging and orgasm denial' },
-  { id: 'ravishment_roleplay', audience: 'both', matchKey: 'ravishment_roleplay',
-    category: 'Power Dynamics',
-    text: 'very rough sex with ravishment roleplay (consensual non-consent, with a safe word)',
-    resultLabel: 'Very rough sex with ravishment roleplay (with a safe word)' },
 
   // ---- Couple's Intimate Exploration ----
-  { id: 'strap_on', audience: 'both', matchKey: 'strap_on',
-    category: "Couple's Intimate Exploration",
-    text: 'trying a strap-on together',
-    resultLabel: 'Trying a strap-on together' },
   { id: 'soft_anal_her', audience: 'her', matchKey: 'soft_anal',
     category: "Couple's Intimate Exploration",
     text: 'receiving soft, slow anal sex from your partner (with plenty of preparation)',

@@ -34,95 +34,229 @@
 
   // Per-question icons rendered inside the gradient card. All shapes are
   // outline-only (fill="none", stroke="currentColor"), so they pick up
-  // the white `color` set in CSS. New names: add an entry here and use
-  // the name as an `icon: '…'` field in data/questions.js.
+  // the white `color` set in CSS. There are 36 entries here — one per
+  // unique activity in data/questions.js. Every question carries a
+  // deliberate icon name; the `heart` entry below is itself a real
+  // question icon (slow-anal) and also serves as last-resort fallback.
+  //
+  // To add a new icon: register it here and use the name as the
+  // `icon: '…'` field on a question.
+  var SVG_OPEN  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">';
+  var SVG_CLOSE = '</svg>';
+  function I(body) { return SVG_OPEN + body + SVG_CLOSE; }
+
   var Q_ICONS = {
-    bath:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-      + '<path d="M4 12h17v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-3z"/>'
-      + '<path d="M6 12V7a2 2 0 0 1 2-2c1 0 1.9.7 2.1 1.7"/>'
-      + '<line x1="3" y1="12" x2="21" y2="12"/>'
-      + '<line x1="7"  y1="20" x2="6"  y2="22"/>'
-      + '<line x1="17" y1="20" x2="18" y2="22"/>'
-      + '</svg>',
-    droplet:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-      + '<path d="M12 3 C 12 3 5.5 10.5 5.5 15.5 a 6.5 6.5 0 0 0 13 0 C 18.5 10.5 12 3 12 3 Z"/>'
-      + '</svg>',
-    sparkles:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-      + '<path d="M9 4 L 10 7 L 13 8 L 10 9 L 9 12 L 8 9 L 5 8 L 8 7 Z"/>'
-      + '<path d="M17 11 L 17.7 13 L 19.5 13.6 L 17.7 14.2 L 17 16 L 16.3 14.2 L 14.5 13.6 L 16.3 13 Z"/>'
-      + '<path d="M14 18 L 14.5 19.3 L 15.8 19.7 L 14.5 20 L 14 21.3 L 13.5 20 L 12.2 19.7 L 13.5 19.3 Z"/>'
-      + '</svg>',
-    bed:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-      + '<path d="M3 18v-9"/>'
-      + '<path d="M21 18v-4a3 3 0 0 0-3-3H3"/>'
-      + '<line x1="3"  y1="18" x2="21" y2="18"/>'
-      + '<circle cx="7.5" cy="11" r="1.7"/>'
-      + '</svg>',
-    message:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-      + '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.7 8.7 0 0 1-4-1L3 20l1.2-4A8.4 8.4 0 1 1 21 11.5z"/>'
-      + '</svg>',
-    plane:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-      + '<path d="M21 3 L 11 13"/>'
-      + '<path d="M21 3 L 14.5 21 L 11 13 L 3 9.5 Z"/>'
-      + '</svg>',
-    'eye-off':
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-      + '<path d="M9.88 9.88a3 3 0 0 0 4.24 4.24"/>'
+    bath: I(
+      '<path d="M3 12h18v3a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5z"/>'
+      + '<path d="M6 12V7a2.4 2.4 0 0 1 2.4-2.4c1.2 0 2.2.9 2.4 2"/>'
+      + '<line x1="5"  y1="20" x2="4"  y2="22.5"/>'
+      + '<line x1="19" y1="20" x2="20" y2="22.5"/>'
+    ),
+    hands: I(
+      '<path d="M9 5a1.5 1.5 0 0 1 3 0v6"/>'
+      + '<path d="M12 4a1.5 1.5 0 0 1 3 0v7"/>'
+      + '<path d="M15 6a1.5 1.5 0 0 1 3 0v6a6 6 0 0 1-12 0V9a1.5 1.5 0 0 1 3 0"/>'
+      + '<path d="M9 9V6"/>'
+    ),
+    droplet: I(
+      '<path d="M12 3 C 12 3 5.5 10.5 5.5 15.5 a 6.5 6.5 0 0 0 13 0 C 18.5 10.5 12 3 12 3 Z"/>'
+    ),
+    feather: I(
+      '<path d="M20 3c-5 0-9 2-12 5-3 3-5 8-5 13 5 0 10-2 13-5 3-3 5-7 5-12V3z"/>'
+      + '<path d="M3 21 L 14 10"/>'
+      + '<path d="M17 11H9"/>'
+    ),
+    eye: I(
+      '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>'
+      + '<circle cx="12" cy="12" r="3"/>'
+    ),
+    bulb: I(
+      '<path d="M9 18h6"/>'
+      + '<path d="M10 21.5h4"/>'
+      + '<path d="M7 11a5 5 0 0 1 10 0c0 2-1.2 3-2 4.2-.6 .8-.7 1.5-.7 2.3H9.7c0-.8-.1-1.5-.7-2.3C8.2 14 7 13 7 11Z"/>'
+    ),
+    rotate: I(
+      '<path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"/>'
+      + '<polyline points="21 3 21 8 16 8"/>'
+      + '<path d="M21 12a9 9 0 0 1-15.5 6.3L3 16"/>'
+      + '<polyline points="3 21 3 16 8 16"/>'
+    ),
+    sunrise: I(
+      '<line x1="12" y1="2"  x2="12" y2="6"/>'
+      + '<line x1="5"  y1="6"  x2="6.5" y2="7.5"/>'
+      + '<line x1="19" y1="6"  x2="17.5" y2="7.5"/>'
+      + '<line x1="2"  y1="13" x2="5"  y2="13"/>'
+      + '<line x1="19" y1="13" x2="22" y2="13"/>'
+      + '<path d="M6 13a6 6 0 0 1 12 0"/>'
+      + '<line x1="2" y1="20" x2="22" y2="20"/>'
+      + '<polyline points="9 9 12 6 15 9"/>'
+    ),
+    hand: I(
+      '<path d="M9 11V6a1.5 1.5 0 1 1 3 0v5"/>'
+      + '<path d="M12 11V4.5a1.5 1.5 0 1 1 3 0V11"/>'
+      + '<path d="M15 11V7a1.5 1.5 0 1 1 3 0v7a6 6 0 0 1-6 6h-2a6 6 0 0 1-6-6v-3.5a1.5 1.5 0 1 1 3 0V13"/>'
+    ),
+    tree: I(
+      '<path d="M12 3 L 7 9 L 9.5 9 L 5.5 14 L 8.5 14 L 4 19 L 20 19 L 15.5 14 L 18.5 14 L 14.5 9 L 17 9 Z"/>'
+      + '<line x1="12" y1="19" x2="12" y2="22"/>'
+    ),
+    car: I(
+      '<path d="M5 13 L 7 7 H 17 L 19 13"/>'
+      + '<rect x="3" y="13" width="18" height="5" rx="1.5"/>'
+      + '<circle cx="7"  cy="18.5" r="1.8"/>'
+      + '<circle cx="17" cy="18.5" r="1.8"/>'
+    ),
+    sailboat: I(
+      '<path d="M2 18 a 4 3 0 0 0 20 0"/>'
+      + '<line x1="12" y1="3" x2="12" y2="16"/>'
+      + '<path d="M12 4 L 19 15 H 12 Z"/>'
+      + '<path d="M12 7 L 6 15 H 12 Z"/>'
+    ),
+    movie: I(
+      '<rect x="3" y="8" width="18" height="12" rx="1"/>'
+      + '<path d="M3 8 L 21 4"/>'
+      + '<path d="M7 7.2 L 9 3.2"/>'
+      + '<path d="M11 6.3 L 13 2.3"/>'
+      + '<path d="M15 5.5 L 17 1.5"/>'
+    ),
+    'shopping-bag': I(
+      '<path d="M6 8 H 18 L 19 21 a 1 1 0 0 1 -1 1 H 6 a 1 1 0 0 1 -1 -1 Z"/>'
+      + '<path d="M9 8 V 6 a 3 3 0 0 1 6 0 V 8"/>'
+    ),
+    spa: I(
+      '<path d="M3 21 c 0 -10 8 -18 18 -18 c 0 10 -8 18 -18 18 Z"/>'
+      + '<path d="M3 21 L 21 3"/>'
+    ),
+    music: I(
+      '<path d="M9 18V5l12-2v13"/>'
+      + '<circle cx="6"  cy="18" r="3"/>'
+      + '<circle cx="18" cy="16" r="3"/>'
+    ),
+    beach: I(
+      '<path d="M2 12 H 22"/>'
+      + '<path d="M22 12 C 22 6 17 3 11 3"/>'
+      + '<path d="M2 12 C 2 9 6 7 11 7"/>'
+      + '<path d="M2 12 C 4 9 8 8 11 9"/>'
+      + '<path d="M22 12 C 18 9 14 9 11 11"/>'
+      + '<line x1="11" y1="3" x2="11" y2="20"/>'
+      + '<path d="M11 20 a 2 2 0 0 0 -2 2"/>'
+    ),
+    hanger: I(
+      '<path d="M12 5 a 1.5 1.5 0 1 1 -1.4 2"/>'
+      + '<path d="M10.6 7 L 12 10 L 3 17 a 1 1 0 0 0 1 1 H 20 a 1 1 0 0 0 1 -1 L 12 10"/>'
+    ),
+    tv: I(
+      '<rect x="3" y="7" width="18" height="12" rx="2"/>'
+      + '<polyline points="8,3 12,7 16,3"/>'
+    ),
+    bolt: I(
+      '<path d="M13 2 L 4 14 H 11 L 11 22 L 20 10 H 13 Z"/>'
+    ),
+    mirror: I(
+      '<path d="M12 2 a 5 7 0 1 0 0 14 a 5 7 0 1 0 0 -14 Z"/>'
+      + '<line x1="12" y1="16" x2="12" y2="22"/>'
+      + '<line x1="9"  y1="22" x2="15" y2="22"/>'
+    ),
+    snowflake: I(
+      '<line x1="12" y1="2"  x2="12" y2="22"/>'
+      + '<line x1="2"  y1="12" x2="22" y2="12"/>'
+      + '<line x1="5"  y1="5"  x2="19" y2="19"/>'
+      + '<line x1="5"  y1="19" x2="19" y2="5"/>'
+      + '<polyline points="10 4 12 2 14 4"/>'
+      + '<polyline points="10 20 12 22 14 20"/>'
+      + '<polyline points="4 10 2 12 4 14"/>'
+      + '<polyline points="20 10 22 12 20 14"/>'
+    ),
+    video: I(
+      '<rect x="6" y="2" width="12" height="20" rx="3"/>'
+      + '<polygon points="10 8 16 12 10 16"/>'
+    ),
+    'video-camera': I(
+      '<rect x="2" y="6" width="14" height="12" rx="2"/>'
+      + '<path d="M16 10 L 22 7 V 17 L 16 14 Z"/>'
+      + '<circle cx="8" cy="12" r="2.4"/>'
+    ),
+    'lock-open': I(
+      '<rect x="5" y="11" width="14" height="10" rx="2"/>'
+      + '<path d="M8 11 V 7 a 4 4 0 0 1 7.5 -2"/>'
+    ),
+    crown: I(
+      '<path d="M3 8 L 6 14 L 9 6 L 12 14 L 15 6 L 18 14 L 21 8 V 18 H 3 Z"/>'
+      + '<line x1="3" y1="20.5" x2="21" y2="20.5"/>'
+    ),
+    palm: I(
+      '<path d="M11 11V4.5a1.5 1.5 0 1 1 3 0V11"/>'
+      + '<path d="M14 11V7a1.5 1.5 0 1 1 3 0v7a6 6 0 0 1-6 6h-1a5 5 0 0 1-5-5v-3a1.5 1.5 0 1 1 3 0V14"/>'
+      + '<path d="M2 11 H 5"/>'
+      + '<path d="M3 7  L 5 8"/>'
+      + '<path d="M3 15 L 5 14"/>'
+    ),
+    flame: I(
+      '<path d="M12 2c1.2 3.5-.4 5.4-1.5 6.7-1.2 1.4-2.2 2.9-2.2 5 0 1.4.6 2.6 1.5 3.4-.7-.3-2-1.3-2.3-3.3-.7 1.6-1.3 3-1 4.6.4 2.7 2.9 4.6 5.5 4.6 3.5 0 6.5-2.8 6.5-6.5 0-6.5-6.5-9-6.5-14.5z"/>'
+    ),
+    'eye-off': I(
+      '<path d="M9.88 9.88a3 3 0 0 0 4.24 4.24"/>'
       + '<path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>'
       + '<path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>'
       + '<line x1="3" y1="3" x2="21" y2="21"/>'
-      + '</svg>',
-    mask:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-      + '<path d="M3 9 C 3 7 5 6 7.5 6 c 1.6 0 3 .5 4.5 1.7 C 13.5 6.5 14.9 6 16.5 6 C 19 6 21 7 21 9 c 0 5-4 9-9 9 s -9-4 -9-9 Z"/>'
-      + '<line x1="7"  y1="11" x2="9.5"  y2="11"/>'
-      + '<line x1="14.5" y1="11" x2="17" y2="11"/>'
-      + '</svg>',
-    music:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-      + '<path d="M9 18V5l12-2v13"/>'
-      + '<circle cx="6"  cy="18" r="3"/>'
-      + '<circle cx="18" cy="16" r="3"/>'
-      + '</svg>',
-    moon:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-      + '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'
-      + '</svg>',
-    tv:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-      + '<rect x="3" y="7" width="18" height="12" rx="2"/>'
-      + '<polyline points="8,3 12,7 16,3"/>'
-      + '</svg>',
-    camera:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-      + '<path d="M3 8h3.5l2-3h7l2 3H21 a1 1 0 0 1 1 1v10 a1 1 0 0 1-1 1H3 a1 1 0 0 1-1-1V9 a1 1 0 0 1 1-1z"/>'
-      + '<circle cx="12" cy="13.5" r="3.5"/>'
-      + '</svg>',
-    glass:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-      + '<path d="M7 4h10l-1 7a4 4 0 0 1-8 0L7 4z"/>'
-      + '<line x1="12" y1="15" x2="12" y2="20"/>'
-      + '<line x1="9"  y1="20" x2="15" y2="20"/>'
-      + '</svg>',
-    tree:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-      + '<path d="M12 3 L 7 9 L 9.5 9 L 5.5 14 L 8.5 14 L 4 19 L 20 19 L 15.5 14 L 18.5 14 L 14.5 9 L 17 9 Z"/>'
-      + '<line x1="12" y1="19" x2="12" y2="22"/>'
-      + '</svg>',
-    heart:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-      + '<path d="M12 21s-7-4.4-9-9c-1.4-3.2.6-7 4-7 2 0 3.6 1.2 5 3 1.4-1.8 3-3 5-3 3.4 0 5.4 3.8 4 7-2 4.6-9 9-9 9z"/>'
-      + '</svg>',
-    flame:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-      + '<path d="M12 2c1.2 3.5-.4 5.4-1.5 6.7-1.2 1.4-2.2 2.9-2.2 5 0 1.4.6 2.6 1.5 3.4-.7-.3-2-1.3-2.3-3.3-.7 1.6-1.3 3-1 4.6.4 2.7 2.9 4.6 5.5 4.6 3.5 0 6.5-2.8 6.5-6.5 0-6.5-6.5-9-6.5-14.5z"/>'
-      + '</svg>'
+    ),
+    lock: I(
+      '<rect x="5" y="11" width="14" height="10" rx="2"/>'
+      + '<path d="M8 11 V 7 a 4 4 0 0 1 8 0 v 4"/>'
+    ),
+    remote: I(
+      '<rect x="8" y="2.5" width="8" height="19" rx="2"/>'
+      + '<circle cx="12" cy="8"  r="0.9"/>'
+      + '<circle cx="12" cy="13" r="0.9"/>'
+      + '<line x1="10.5" y1="17.5" x2="13.5" y2="17.5"/>'
+    ),
+    heart: I(
+      '<path d="M12 21s-7-4.4-9-9c-1.4-3.2.6-7 4-7 2 0 3.6 1.2 5 3 1.4-1.8 3-3 5-3 3.4 0 5.4 3.8 4 7-2 4.6-9 9-9 9z"/>'
+    ),
+    robot: I(
+      '<rect x="5" y="8" width="14" height="12" rx="2"/>'
+      + '<line x1="12" y1="4" x2="12" y2="8"/>'
+      + '<circle cx="12" cy="3.2" r="1"/>'
+      + '<circle cx="9.5"  cy="13" r="0.9"/>'
+      + '<circle cx="14.5" cy="13" r="0.9"/>'
+      + '<line x1="9.5" y1="17" x2="14.5" y2="17"/>'
+      + '<line x1="3" y1="13" x2="5" y2="13"/>'
+      + '<line x1="19" y1="13" x2="21" y2="13"/>'
+    ),
+    // Threesomes — three small heads with a subtle marker over the centre
+    // figure so woman/man/ladyboy read as distinct without color.
+    'users-w': I(
+      '<circle cx="6"  cy="11" r="2.6"/>'
+      + '<circle cx="12" cy="11" r="2.6"/>'
+      + '<circle cx="18" cy="11" r="2.6"/>'
+      + '<path d="M2.5 19 a 3.5 3.5 0 0 1 7 0"/>'
+      + '<path d="M8.5 19 a 3.5 3.5 0 0 1 7 0"/>'
+      + '<path d="M14.5 19 a 3.5 3.5 0 0 1 7 0"/>'
+      + '<circle cx="12" cy="4.5" r="1.4"/>'
+      + '<line  x1="12" y1="5.9" x2="12" y2="7.6"/>'
+      + '<line  x1="10.7" y1="7"  x2="13.3" y2="7"/>'
+    ),
+    'users-m': I(
+      '<circle cx="6"  cy="11" r="2.6"/>'
+      + '<circle cx="12" cy="11" r="2.6"/>'
+      + '<circle cx="18" cy="11" r="2.6"/>'
+      + '<path d="M2.5 19 a 3.5 3.5 0 0 1 7 0"/>'
+      + '<path d="M8.5 19 a 3.5 3.5 0 0 1 7 0"/>'
+      + '<path d="M14.5 19 a 3.5 3.5 0 0 1 7 0"/>'
+      + '<circle cx="11.2" cy="6.4" r="1.4"/>'
+      + '<line  x1="12.2" y1="5.4" x2="14"   y2="3.6"/>'
+      + '<polyline points="11.8 3.4 14 3.4 14 5.6"/>'
+    ),
+    'users-x': I(
+      '<circle cx="6"  cy="11" r="2.6"/>'
+      + '<circle cx="12" cy="11" r="2.6"/>'
+      + '<circle cx="18" cy="11" r="2.6"/>'
+      + '<path d="M2.5 19 a 3.5 3.5 0 0 1 7 0"/>'
+      + '<path d="M8.5 19 a 3.5 3.5 0 0 1 7 0"/>'
+      + '<path d="M14.5 19 a 3.5 3.5 0 0 1 7 0"/>'
+      + '<line x1="10.5" y1="4.5" x2="13.5" y2="7.5"/>'
+      + '<line x1="13.5" y1="4.5" x2="10.5" y2="7.5"/>'
+    )
   };
 
   function iconSvgFor(name) {

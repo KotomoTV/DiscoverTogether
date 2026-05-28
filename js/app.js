@@ -1,47 +1,84 @@
-// Discover Together — onboarding + pairing controller.
+// Crave — onboarding, pairing, questionnaire, and result controller.
 //
-// Scope of this chunk:
-//   * Screen navigation with subtle slide/fade transitions.
-//   * Name → Role → PIN entry, with client-side validation.
-//   * Client-side PIN hashing (SHA-256 + fixed app salt from config.js).
-//   * Supabase RPC calls: prepare_join, commit_join, get_my_state.
-//   * Branching from prepare_join: empty / partner_pending / role_taken / couple_full.
-//   * Partner-confirmation screen → commit_join → How-It-Works.
-//   * How-It-Works → Privacy Promise → first Question card (inert).
-//   * Session persistence in localStorage; on reload, restore via get_my_state.
-//
-// Out of scope (later chunks):
-//   * Answer-button submission, progress tracking, completion, results.
+// Architecture:
+//   - One screen visible at a time. goto(name) hides the current screen
+//     and shows the next with a 220ms enter animation (140ms for the
+//     question tile swap, per the brief).
+//   - State lives in the `state` object plus localStorage for
+//     session_token recovery on reload.
+//   - All DB access goes through Supabase RPCs in supabase/schema.sql.
+//     PostgREST errors surface inline; full error objects are logged
+//     to console.error under a [CRAVE] prefix.
 
 (function () {
   'use strict';
 
   // -----------------------------------------------------------------------
-  // Config
+  // Constants
   // -----------------------------------------------------------------------
 
-  var STORAGE_KEY = 'discover-together::session::v1';
-  var SCREEN_ANIM_MS = 280;
+  var STORAGE_KEY = 'crave::session::v1';
+  var TILE_ANIM_MS = 140;
+  var SCREEN_ANIM_MS = 220;
+  var RELAX_HOLD_MS = 4000;
+  var CODE_CREATE_MAX_ATTEMPTS = 8;
+
+  var SVG_LOGO = ''
+    + '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 58" role="img" aria-label="Crave">'
+    +   '<defs>'
+    +     '<clipPath id="__CLIP__">'
+    +       '<path d="M32 54 C 12 40 2 28 2 18 C 2 9 9 4 16 4 C 23 4 29 9 32 15 C 35 9 41 4 48 4 C 55 4 62 9 62 18 C 62 28 52 40 32 54 Z"/>'
+    +     '</clipPath>'
+    +   '</defs>'
+    +   '<g clip-path="url(#__CLIP__)">'
+    +     '<rect x="0"  y="0" width="31" height="58" fill="#FF6A2C"/>'
+    +     '<rect x="33" y="0" width="31" height="58" fill="#FF2E74"/>'
+    +   '</g>'
+    + '</svg>';
 
   var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // -----------------------------------------------------------------------
-  // State (in-memory; the only persisted piece is session_token + a name
-  // copy used to render quickly on reload before the RPC resolves).
+  // State
   // -----------------------------------------------------------------------
 
   var state = {
     name: '',
-    role: null,            // 'her' | 'him'
-    pinHash: null,         // only held in memory between PIN screen and commit_join
+    gender: null,             // 'woman' | 'man'
     sessionToken: null,
     partnerName: null,
+
+    deck: [],                 // array of question objects, filtered by gender
+    answers: {},              // matchKey → response (1..4)
+    qIndex: 0,                // current position in deck
     currentScreen: null,
-    currentQuestionIndex: 0
+    isTransitioning: false,   // disables rating taps during 140ms swap
+    relaxTimer: null
   };
 
   // -----------------------------------------------------------------------
-  // localStorage helpers (best-effort; private mode may throw).
+  // Tiny helpers
+  // -----------------------------------------------------------------------
+
+  function $(sel, root)  { return (root || document).querySelector(sel); }
+  function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+
+  function pad2(n) { n = String(n); return n.length < 2 ? '0' + n : n; }
+
+  function setEnabled(el, enabled) {
+    if (!el) return;
+    el.disabled = !enabled;
+    el.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+  }
+
+  function vibrate(ms) {
+    if (navigator.vibrate) {
+      try { navigator.vibrate(ms); } catch (e) { /* ignore */ }
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Persistence
   // -----------------------------------------------------------------------
 
   function persistSession() {
@@ -50,7 +87,7 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         sessionToken: state.sessionToken,
         name: state.name,
-        role: state.role,
+        gender: state.gender,
         partnerName: state.partnerName
       }));
     } catch (e) { /* ignore */ }
@@ -60,9 +97,7 @@
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
       return raw ? JSON.parse(raw) : null;
-    } catch (e) {
-      return null;
-    }
+    } catch (e) { return null; }
   }
 
   function clearSession() {
@@ -70,11 +105,11 @@
   }
 
   // -----------------------------------------------------------------------
-  // PIN hashing: SHA-256 of (salt + '::' + pin), hex-encoded.
+  // Hashing
   // -----------------------------------------------------------------------
 
-  function hexFromBuffer(buffer) {
-    var bytes = new Uint8Array(buffer);
+  function hexFromBuffer(buf) {
+    var bytes = new Uint8Array(buf);
     var out = '';
     for (var i = 0; i < bytes.length; i++) {
       var h = bytes[i].toString(16);
@@ -83,16 +118,16 @@
     return out;
   }
 
-  async function hashPin(pin) {
-    var salt = window.DT_CONFIG && window.DT_CONFIG.PIN_HASH_SALT;
-    if (!salt) throw new Error('Missing PIN_HASH_SALT');
-    var payload = new TextEncoder().encode(salt + '::' + pin);
+  async function hashCode(code) {
+    var salt = window.CRAVE_CONFIG && window.CRAVE_CONFIG.CODE_HASH_SALT;
+    if (!salt) throw new Error('Missing CODE_HASH_SALT');
+    var payload = new TextEncoder().encode(salt + '::' + code);
     var hash = await crypto.subtle.digest('SHA-256', payload);
     return hexFromBuffer(hash);
   }
 
   // -----------------------------------------------------------------------
-  // Supabase client (lazily constructed).
+  // Supabase client
   // -----------------------------------------------------------------------
 
   var _supabase = null;
@@ -103,8 +138,8 @@
       throw new Error('Supabase JS not loaded');
     }
     _supabase = window.supabase.createClient(
-      window.DT_CONFIG.SUPABASE_URL,
-      window.DT_CONFIG.SUPABASE_PUBLISHABLE_KEY,
+      window.CRAVE_CONFIG.SUPABASE_URL,
+      window.CRAVE_CONFIG.SUPABASE_PUBLISHABLE_KEY,
       { auth: { persistSession: false, autoRefreshToken: false } }
     );
     return _supabase;
@@ -114,55 +149,57 @@
     var resp;
     try {
       resp = await supabase().rpc(fn, args);
-    } catch (networkErr) {
-      // Thrown for true network failures (DNS, offline, CORS preflight blocked, …).
-      networkErr.__dt_kind = 'network';
-      throw networkErr;
+    } catch (netErr) {
+      netErr.__crave_kind = 'network';
+      throw netErr;
     }
     if (resp.error) {
-      // PostgrestError shape: { message, code, hint, details, status }.
-      var pgErr = resp.error;
-      pgErr.__dt_kind = 'postgrest';
-      pgErr.__dt_rpc  = fn;
-      throw pgErr;
+      var err = resp.error;
+      err.__crave_kind = 'postgrest';
+      err.__crave_rpc  = fn;
+      throw err;
     }
     return resp.data;
   }
 
-  // Turn any thrown error into a single line for the user, while making
-  // sure the full object is in console.error for DevTools inspection.
   function describeError(err, context) {
     /* eslint-disable no-console */
-    console.error('[DT] ' + context + ':', err);
-    if (err && err.cause)    console.error('[DT] cause:',    err.cause);
-    if (err && err.status)   console.error('[DT] status:',   err.status);
-    if (err && err.code)     console.error('[DT] code:',     err.code);
-    if (err && err.details)  console.error('[DT] details:',  err.details);
-    if (err && err.hint)     console.error('[DT] hint:',     err.hint);
+    console.error('[CRAVE] ' + context + ':', err);
+    if (err && err.code)    console.error('[CRAVE] code:',    err.code);
+    if (err && err.hint)    console.error('[CRAVE] hint:',    err.hint);
+    if (err && err.details) console.error('[CRAVE] details:', err.details);
     /* eslint-enable no-console */
-
-    if (!err) return 'Unknown error.';
-
-    if (err.__dt_kind === 'network') {
-      return 'Network error: ' + (err.message || 'request failed') +
-             '. Check your connection and try again.';
+    if (!err) return 'Something went wrong.';
+    if (err.__crave_kind === 'network') {
+      return 'Network error: ' + (err.message || 'request failed') + '.';
     }
-    // PostgrestError or anything with a message.
     var bits = [];
     if (err.message) bits.push(err.message);
     if (err.code)    bits.push('code ' + err.code);
-    if (err.hint)    bits.push(err.hint);
     return bits.length ? bits.join(' · ') : String(err);
+  }
+
+  // -----------------------------------------------------------------------
+  // Logo mounting (split-heart SVG with a unique clip id per instance)
+  // -----------------------------------------------------------------------
+
+  function mountLogos() {
+    var marks = $$('[data-logo]');
+    for (var i = 0; i < marks.length; i++) {
+      var holder = marks[i];
+      var id = 'crave-clip-' + holder.getAttribute('data-logo');
+      holder.innerHTML = SVG_LOGO.replace(/__CLIP__/g, id);
+    }
   }
 
   // -----------------------------------------------------------------------
   // Screen navigation
   // -----------------------------------------------------------------------
 
-  function findVisibleScreen() {
-    var screens = document.querySelectorAll('.screen');
-    for (var i = 0; i < screens.length; i++) {
-      if (!screens[i].hidden) return screens[i];
+  function visibleScreen() {
+    var els = document.querySelectorAll('.screen');
+    for (var i = 0; i < els.length; i++) {
+      if (!els[i].hidden) return els[i];
     }
     return null;
   }
@@ -171,42 +208,57 @@
     opts = opts || {};
     var next = document.getElementById('screen-' + name);
     if (!next) return;
-
-    var current = findVisibleScreen();
+    var current = visibleScreen();
     if (current === next) return;
+
+    // Tear down any per-screen timers.
+    if (state.relaxTimer) { clearTimeout(state.relaxTimer); state.relaxTimer = null; }
 
     if (current) {
       current.hidden = true;
       current.classList.remove('is-entering');
     }
-
     next.hidden = false;
     state.currentScreen = name;
 
-    // Restart enter animation
     if (!prefersReducedMotion && !opts.skipAnim) {
       next.classList.remove('is-entering');
-      // Force reflow so the animation restarts cleanly.
       void next.offsetWidth;
       next.classList.add('is-entering');
-      window.setTimeout(function () {
-        next.classList.remove('is-entering');
-      }, SCREEN_ANIM_MS + 40);
+      window.setTimeout(function () { next.classList.remove('is-entering'); }, SCREEN_ANIM_MS + 40);
     }
 
-    // Top of viewport on each screen change.
     try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch (e) { window.scrollTo(0, 0); }
 
-    // Move focus to the first heading for screen readers.
+    // Move focus to the screen heading for SR users.
     var heading = next.querySelector('h1, h2');
     if (heading) {
       if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
       try { heading.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
     }
+
+    // Screen-specific entry hooks.
+    if (name === 'name') {
+      window.setTimeout(function () {
+        var i = $('#input-name');
+        if (i) i.focus();
+      }, SCREEN_ANIM_MS);
+    }
+    if (name === 'code') {
+      window.setTimeout(function () {
+        var boxes = $$('#screen-code .code-box');
+        if (boxes[0]) boxes[0].focus();
+      }, SCREEN_ANIM_MS);
+    }
+    if (name === 'relax') {
+      state.relaxTimer = window.setTimeout(function () {
+        if (state.currentScreen === 'relax') startQuestionnaire();
+      }, RELAX_HOLD_MS);
+    }
   }
 
   // -----------------------------------------------------------------------
-  // Inline error display (one slot per screen, created lazily).
+  // Inline error display
   // -----------------------------------------------------------------------
 
   function ensureErrorSlot(screenName) {
@@ -224,33 +276,22 @@
     else screen.appendChild(slot);
     return slot;
   }
-
   function showError(screenName, message) {
     var slot = ensureErrorSlot(screenName);
     if (!slot) return;
-    if (message) {
-      slot.textContent = message;
-      slot.hidden = false;
-    } else {
-      slot.textContent = '';
-      slot.hidden = true;
-    }
+    if (message) { slot.textContent = message; slot.hidden = false; }
+    else         { slot.textContent = '';      slot.hidden = true; }
   }
-
-  function clearError(screenName) {
-    showError(screenName, '');
-  }
+  function clearError(screenName) { showError(screenName, ''); }
 
   // -----------------------------------------------------------------------
-  // Busy state on a primary button
+  // Busy button state
   // -----------------------------------------------------------------------
 
   function setBusy(button, busy, busyLabel) {
     if (!button) return;
     if (busy) {
-      if (!button.dataset.originalText) {
-        button.dataset.originalText = button.textContent;
-      }
+      if (!button.dataset.originalText) button.dataset.originalText = button.textContent;
       button.disabled = true;
       button.setAttribute('aria-disabled', 'true');
       button.classList.add('is-busy');
@@ -267,243 +308,576 @@
   }
 
   // -----------------------------------------------------------------------
-  // Question rendering (chunk 3: render Q1 only, answer buttons inert)
+  // Back navigation map (steps 2-4 only, per brief)
   // -----------------------------------------------------------------------
 
-  function renderCurrentQuestion() {
-    var list = window.QUESTIONS || [];
-    var q = list[state.currentQuestionIndex];
-    if (!q) return;
+  var BACK_MAP = {
+    'name':   'welcome',
+    'gender': 'name',
+    'code':   'gender'
+  };
 
-    var screen = document.getElementById('screen-question');
-    if (!screen) return;
-
-    var phaseEl = screen.querySelector('[data-slot="phase-name"]');
-    var progressEl = screen.querySelector('[data-slot="progress"]');
-    var textEl = screen.querySelector('[data-slot="question-text"]');
-
-    if (phaseEl)    phaseEl.textContent = 'Phase ' + q.phase + ': ' + q.phaseName;
-    if (progressEl) progressEl.textContent = q.id + ' / ' + list.length;
-
-    var phrase;
-    if (q.split) {
-      phrase = state.role === 'her' ? q.textHer : q.textHim;
-    } else {
-      phrase = q.text;
-    }
-    if (textEl) textEl.textContent = phrase + '?';
+  function onBackTap() {
+    var target = BACK_MAP[state.currentScreen];
+    if (target) goto(target);
   }
 
   // -----------------------------------------------------------------------
-  // Flow handlers
+  // Screen 1 → 2 → 3 → 4 handlers
   // -----------------------------------------------------------------------
 
-  function onSplashStart() {
-    goto('name');
-    window.setTimeout(function () {
-      var input = document.getElementById('input-name');
-      if (input) input.focus();
-    }, SCREEN_ANIM_MS);
-  }
+  function onWelcomeStart() { goto('name'); }
 
   function onNameInput(e) {
-    var btn = document.querySelector('[data-action="name-next"]');
-    var ok = e.target.value.trim().length >= 2;
-    btn.disabled = !ok;
-    btn.setAttribute('aria-disabled', ok ? 'false' : 'true');
+    setEnabled($('[data-action="name-next"]'), e.target.value.trim().length >= 1);
   }
-
   function onNameNext() {
-    var input = document.getElementById('input-name');
-    var val = (input.value || '').trim();
-    if (val.length < 2) return;
-    state.name = val;
-    goto('role');
+    var v = ($('#input-name').value || '').trim();
+    if (v.length < 1) return;
+    state.name = v;
+    goto('gender');
   }
 
-  function onRoleSelect(e) {
-    var role = e.currentTarget.getAttribute('data-role');
-    if (role !== 'her' && role !== 'him') return;
-    state.role = role;
-    // Clear any stale PIN entry / error.
-    var pinInput = document.getElementById('input-pin');
-    if (pinInput) pinInput.value = '';
-    var pinBtn = document.querySelector('[data-action="pin-next"]');
-    if (pinBtn) {
-      pinBtn.disabled = true;
-      pinBtn.setAttribute('aria-disabled', 'true');
+  function onGenderSelect(e) {
+    var g = e.currentTarget.getAttribute('data-gender');
+    if (g !== 'woman' && g !== 'man') return;
+    state.gender = g;
+    // Prep the code screen.
+    clearError('code');
+    $$('#screen-code .code-box').forEach(function (b) { b.value = ''; });
+    setEnabled($('[data-action="code-join"]'), false);
+    goto('code');
+  }
+
+  // -----------------------------------------------------------------------
+  // Code-input behaviour (4 boxes, auto-advance + paste + backspace)
+  // -----------------------------------------------------------------------
+
+  function readCode() {
+    return $$('#screen-code .code-box').map(function (b) { return b.value.replace(/\D/g, ''); }).join('');
+  }
+
+  function refreshJoinEnabled() {
+    setEnabled($('[data-action="code-join"]'), readCode().length === 4);
+  }
+
+  function onCodeBoxInput(e) {
+    var box = e.target;
+    var val = (box.value || '').replace(/\D/g, '');
+    box.value = val.slice(-1); // single digit
+    if (box.value) {
+      var next = box.nextElementSibling;
+      while (next && !next.classList.contains('code-box')) next = next.nextElementSibling;
+      if (next) next.focus();
     }
-    clearError('pin');
-    goto('pin');
-    window.setTimeout(function () {
-      if (pinInput) pinInput.focus();
-    }, SCREEN_ANIM_MS);
+    refreshJoinEnabled();
+    clearError('code');
   }
 
-  function onPinInput(e) {
-    // Strip non-digits, clamp to 6.
-    var cleaned = (e.target.value || '').replace(/\D/g, '').slice(0, 6);
-    if (e.target.value !== cleaned) e.target.value = cleaned;
-    var btn = document.querySelector('[data-action="pin-next"]');
-    var ok = cleaned.length >= 4 && cleaned.length <= 6;
-    btn.disabled = !ok;
-    btn.setAttribute('aria-disabled', ok ? 'false' : 'true');
-    clearError('pin');
-  }
-
-  async function onPinNext() {
-    var input = document.getElementById('input-pin');
-    var pin = (input.value || '').replace(/\D/g, '');
-    if (pin.length < 4 || pin.length > 6) return;
-    if (!state.name || !state.role) {
-      // Defensive: shouldn't happen — bounce them back to the start.
-      goto('name');
-      return;
-    }
-
-    var btn = document.querySelector('[data-action="pin-next"]');
-    clearError('pin');
-    setBusy(btn, true, 'Checking…');
-
-    try {
-      var pinHash = await hashPin(pin);
-      state.pinHash = pinHash;
-
-      var result = await rpc('prepare_join', {
-        p_pin_hash: pinHash,
-        p_role: state.role
-      });
-
-      if (!result || !result.status) {
-        showError('pin', 'Something went wrong. Try again?');
-        return;
-      }
-
-      if (result.status === 'empty') {
-        // No one with this PIN yet — create the couple.
-        var commit = await rpc('commit_join', {
-          p_pin_hash: pinHash,
-          p_name: state.name,
-          p_role: state.role
-        });
-        state.sessionToken = commit.session_token;
-        state.partnerName = null;
-        persistSession();
-        // Don't carry the hash beyond commit.
-        state.pinHash = null;
-        // Confirm the freshly created PIN to the user so they can share it.
-        var pinSlot = document.querySelector('#screen-pin-created [data-slot="pin-value"]');
-        if (pinSlot) pinSlot.textContent = pin;
-        goto('pin-created');
-        return;
-      }
-
-      if (result.status === 'partner_pending') {
-        state.partnerName = result.partner_name;
-        var slot = document.querySelector('#screen-confirm-partner [data-slot="partner-name"]');
-        if (slot) slot.textContent = result.partner_name;
-        clearError('confirm-partner');
-        goto('confirm-partner');
-        return;
-      }
-
-      if (result.status === 'role_taken') {
-        var otherLabel = result.other_role === 'her' ? 'Her' : 'Him';
-        var requestedLabel = state.role === 'her' ? 'Her' : 'Him';
-        showError(
-          'pin',
-          'Looks like there’s already a ' + requestedLabel +
-          ' with this PIN. Try choosing ' + otherLabel + ' instead.'
-        );
-        return;
-      }
-
-      if (result.status === 'couple_full') {
-        showError(
-          'pin',
-          'This PIN is already used by a couple. Try a different PIN with your partner.'
-        );
-        return;
-      }
-
-      showError('pin', 'Something went wrong. Try again?');
-    } catch (err) {
-      showError('pin', describeError(err, 'prepare_join failed'));
-    } finally {
-      setBusy(btn, false);
+  function onCodeBoxKeydown(e) {
+    var box = e.target;
+    if (e.key === 'Backspace' && !box.value) {
+      var prev = box.previousElementSibling;
+      while (prev && !prev.classList.contains('code-box')) prev = prev.previousElementSibling;
+      if (prev) { prev.focus(); prev.value = ''; refreshJoinEnabled(); }
+      e.preventDefault();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (readCode().length === 4) onCodeJoin();
+    } else if (e.key === 'ArrowLeft') {
+      var p = box.previousElementSibling;
+      while (p && !p.classList.contains('code-box')) p = p.previousElementSibling;
+      if (p) p.focus();
+    } else if (e.key === 'ArrowRight') {
+      var n = box.nextElementSibling;
+      while (n && !n.classList.contains('code-box')) n = n.nextElementSibling;
+      if (n) n.focus();
     }
   }
 
-  async function onConfirmYes() {
-    if (!state.pinHash || !state.name || !state.role) {
-      goto('name');
-      return;
+  function onCodePaste(e) {
+    var text = ((e.clipboardData || window.clipboardData).getData('text') || '').replace(/\D/g, '').slice(0, 4);
+    if (!text) return;
+    e.preventDefault();
+    var boxes = $$('#screen-code .code-box');
+    for (var i = 0; i < boxes.length; i++) {
+      boxes[i].value = text.charAt(i) || '';
     }
-    var btn = document.querySelector('[data-action="confirm-yes"]');
-    clearError('confirm-partner');
+    var nextEmpty = -1;
+    for (var j = 0; j < boxes.length; j++) {
+      if (!boxes[j].value) { nextEmpty = j; break; }
+    }
+    var focusIdx = nextEmpty === -1 ? boxes.length - 1 : nextEmpty;
+    if (boxes[focusIdx]) boxes[focusIdx].focus();
+    refreshJoinEnabled();
+  }
+
+  // -----------------------------------------------------------------------
+  // Code Join
+  // -----------------------------------------------------------------------
+
+  async function onCodeJoin() {
+    var code = readCode();
+    if (code.length !== 4) return;
+    if (!state.name || !state.gender) { goto('name'); return; }
+
+    var btn = $('[data-action="code-join"]');
+    clearError('code');
     setBusy(btn, true, 'Joining…');
 
     try {
-      var commit = await rpc('commit_join', {
-        p_pin_hash: state.pinHash,
+      var codeHash = await hashCode(code);
+      var resp = await rpc('join_session', {
+        p_code_hash: codeHash,
         p_name: state.name,
-        p_role: state.role
+        p_gender: state.gender
       });
-      state.sessionToken = commit.session_token;
-      if (commit.partner_name) state.partnerName = commit.partner_name;
+      state.sessionToken = resp.session_token;
+      state.partnerName  = resp.partner_name || null;
       persistSession();
-      state.pinHash = null;
-      goto('how');
+      goto('ready');
     } catch (err) {
-      var msg = (err && (err.message || err.hint)) || '';
+      var msg = (err && (err.message || '')) || '';
       var friendly;
-      if (msg.indexOf('role_taken') !== -1) {
-        friendly = 'That role was just taken. Go back and pick the other role.';
-        console.error('[DT] commit_join: role_taken', err);
+      if (msg.indexOf('code_not_found') !== -1) {
+        friendly = "We don't know that code. Double-check with your partner.";
       } else if (msg.indexOf('couple_full') !== -1) {
-        friendly = 'This PIN is already used by a couple.';
-        console.error('[DT] commit_join: couple_full', err);
+        friendly = 'That code already has two people in it. Try a different code.';
+      } else if (msg.indexOf('invalid_') !== -1) {
+        friendly = 'Could not join. Please go back and check the steps.';
       } else {
-        friendly = describeError(err, 'commit_join failed');
+        friendly = describeError(err, 'join_session failed');
       }
-      showError('confirm-partner', friendly);
+      showError('code', friendly);
     } finally {
       setBusy(btn, false);
     }
   }
 
-  function onConfirmNo() {
-    state.pinHash = null;
-    state.partnerName = null;
-    var input = document.getElementById('input-pin');
-    if (input) input.value = '';
-    var btn = document.querySelector('[data-action="pin-next"]');
-    if (btn) {
-      btn.disabled = true;
-      btn.setAttribute('aria-disabled', 'true');
+  // -----------------------------------------------------------------------
+  // Code Create
+  // -----------------------------------------------------------------------
+
+  function randomFourDigits() {
+    var n = Math.floor(Math.random() * 10000);
+    var s = String(n);
+    while (s.length < 4) s = '0' + s;
+    return s;
+  }
+
+  async function onCodeCreate() {
+    if (!state.name || !state.gender) { goto('name'); return; }
+
+    var btn = $('[data-action="code-create"]');
+    clearError('code');
+    setBusy(btn, true, 'Generating…');
+
+    var lastErr = null;
+    try {
+      for (var attempt = 0; attempt < CODE_CREATE_MAX_ATTEMPTS; attempt++) {
+        var code = randomFourDigits();
+        var hash = await hashCode(code);
+        try {
+          var resp = await rpc('create_session', {
+            p_code_hash: hash,
+            p_name: state.name,
+            p_gender: state.gender
+          });
+          state.sessionToken = resp.session_token;
+          state.partnerName = null;
+          persistSession();
+          // Surface the chosen code to the user.
+          var slot = $('#screen-code-created [data-slot="code-value"]');
+          if (slot) slot.textContent = code;
+          goto('code-created');
+          return;
+        } catch (innerErr) {
+          lastErr = innerErr;
+          var im = (innerErr && innerErr.message) || '';
+          if (im.indexOf('code_in_use') !== -1) {
+            // Roll another digit and retry.
+            continue;
+          }
+          throw innerErr;
+        }
+      }
+      throw lastErr || new Error('exhausted code attempts');
+    } catch (err) {
+      showError('code', describeError(err, 'create_session failed'));
+    } finally {
+      setBusy(btn, false);
     }
-    clearError('pin');
-    goto('pin');
-    window.setTimeout(function () {
-      if (input) input.focus();
-    }, SCREEN_ANIM_MS);
   }
 
-  function onHowContinue() {
-    goto('privacy');
+  function onCodeCreatedContinue() {
+    var slot = $('#screen-code-created [data-slot="code-value"]');
+    if (slot) slot.textContent = ''; // privacy hygiene
+    goto('ready');
   }
 
-  function onPinCreatedContinue() {
-    // Wipe the displayed PIN so it isn't sitting in the DOM after the
-    // user moves on (someone might glance at their screen later).
-    var slot = document.querySelector('#screen-pin-created [data-slot="pin-value"]');
-    if (slot) slot.textContent = '';
-    goto('how');
+  // -----------------------------------------------------------------------
+  // Ready + Relax
+  // -----------------------------------------------------------------------
+
+  function onReadyGo() { goto('relax'); }
+
+  function onRelaxSkip() {
+    if (state.relaxTimer) { clearTimeout(state.relaxTimer); state.relaxTimer = null; }
+    startQuestionnaire();
   }
 
-  function onPrivacyContinue() {
-    renderCurrentQuestion();
+  // -----------------------------------------------------------------------
+  // Questionnaire
+  // -----------------------------------------------------------------------
+
+  function buildDeckAndIndex() {
+    state.deck = window.craveDeckForGender(state.gender);
+    // Resume at the first unanswered question.
+    var firstUnanswered = 0;
+    for (var i = 0; i < state.deck.length; i++) {
+      if (state.answers[state.deck[i].matchKey] == null) { firstUnanswered = i; break; }
+      firstUnanswered = i + 1;
+    }
+    state.qIndex = Math.min(firstUnanswered, state.deck.length - 1);
+    if (firstUnanswered >= state.deck.length) {
+      state.qIndex = state.deck.length - 1;
+    }
+  }
+
+  function startQuestionnaire() {
+    buildDeckAndIndex();
+    // If all already answered, jump to result.
+    var anyMissing = false;
+    for (var i = 0; i < state.deck.length; i++) {
+      if (state.answers[state.deck[i].matchKey] == null) { anyMissing = true; break; }
+    }
+    if (!anyMissing) {
+      goto('result', { skipAnim: true });
+      renderResult();
+      return;
+    }
+    renderQuestion(true);
     goto('question');
+  }
+
+  function renderQuestion(initialMount) {
+    var q = state.deck[state.qIndex];
+    if (!q) return;
+    var tile = $('[data-slot="q-tile"]');
+    var text = $('[data-slot="q-text"]');
+    var progress = $('[data-slot="q-progress"]');
+    var bar = $('[data-slot="q-progress-bar"]');
+    var back = $('[data-action="question-back"]');
+
+    if (text) text.textContent = q.text;
+    if (progress) {
+      progress.textContent = pad2(state.qIndex + 1) + ' / ' + pad2(state.deck.length);
+    }
+    if (bar) {
+      var pct = ((state.qIndex) / state.deck.length) * 100;
+      bar.style.width = pct + '%';
+    }
+    if (back) {
+      // Undo only available after the first card.
+      back.disabled = state.qIndex === 0;
+    }
+
+    if (initialMount) return;
+
+    // Enter animation
+    if (tile && !prefersReducedMotion) {
+      tile.classList.remove('is-entering');
+      void tile.offsetWidth;
+      tile.classList.add('is-entering');
+      window.setTimeout(function () { tile.classList.remove('is-entering'); }, TILE_ANIM_MS + 20);
+    }
+  }
+
+  function setRatingDisabled(disabled) {
+    $$('#screen-question .rating-btn').forEach(function (b) { b.disabled = disabled; });
+  }
+
+  async function onRatingTap(e) {
+    if (state.isTransitioning) return;
+    var btn = e.currentTarget;
+    var response = parseInt(btn.getAttribute('data-response'), 10);
+    if (!response || response < 1 || response > 4) return;
+
+    var q = state.deck[state.qIndex];
+    if (!q) return;
+
+    state.isTransitioning = true;
+    setRatingDisabled(true);
+
+    // Press feedback
+    btn.classList.add('is-pop');
+    vibrate(10);
+    window.setTimeout(function () { btn.classList.remove('is-pop'); }, 160);
+
+    // Optimistic: store locally first; the server is the source of truth
+    // but we don't want the user to wait per card.
+    state.answers[q.matchKey] = response;
+
+    var tile = $('[data-slot="q-tile"]');
+    var doAdvance = function () {
+      var isLast = state.qIndex >= state.deck.length - 1;
+      if (isLast) {
+        finishQuestionnaire();
+        state.isTransitioning = false;
+      } else {
+        state.qIndex += 1;
+        renderQuestion(false);
+        state.isTransitioning = false;
+        setRatingDisabled(false);
+      }
+    };
+
+    if (prefersReducedMotion || !tile) {
+      doAdvance();
+    } else {
+      tile.classList.remove('is-entering');
+      tile.classList.add('is-exiting');
+      window.setTimeout(function () {
+        tile.classList.remove('is-exiting');
+        doAdvance();
+      }, TILE_ANIM_MS);
+    }
+
+    // Fire-and-forget the network write. If it fails, surface the error
+    // and let the user retry from undo.
+    try {
+      await rpc('submit_answer', {
+        p_session_token: state.sessionToken,
+        p_match_key: q.matchKey,
+        p_response: response
+      });
+    } catch (err) {
+      describeError(err, 'submit_answer failed');
+      // Keep going — local state is correct, server can be retried by
+      // re-answering after undo.
+    }
+  }
+
+  function onQuestionBack() {
+    if (state.isTransitioning) return;
+    if (state.qIndex <= 0) return;
+    state.qIndex -= 1;
+    renderQuestion(false);
+  }
+
+  async function finishQuestionnaire() {
+    // Make the progress bar reach 100% before we leave the screen.
+    var bar = $('[data-slot="q-progress-bar"]');
+    if (bar) bar.style.width = '100%';
+
+    try {
+      await rpc('complete_questionnaire', { p_session_token: state.sessionToken });
+    } catch (err) {
+      describeError(err, 'complete_questionnaire failed');
+    }
+    goto('result');
+    renderResult();
+  }
+
+  // -----------------------------------------------------------------------
+  // Result screen
+  // -----------------------------------------------------------------------
+
+  function emptyEl(host) { while (host.firstChild) host.removeChild(host.firstChild); }
+
+  function makeMatchCard(matchKey, tier) {
+    var label = window.CRAVE_RESULT_LABEL[matchKey] || matchKey;
+    var card = document.createElement('div');
+    card.className = 'match-card';
+    card.textContent = label;
+    card.setAttribute('data-tier', tier);
+    return card;
+  }
+
+  function makeMatchGroup(tier, label, iconSvg, matchKeys) {
+    var group = document.createElement('section');
+    group.className = 'match-group match-group--' + tier;
+
+    var header = document.createElement('h3');
+    header.className = 'match-group-header';
+    header.innerHTML = iconSvg + '<span>' + label + '</span>';
+    group.appendChild(header);
+
+    var list = document.createElement('div');
+    list.className = 'match-list';
+    matchKeys.forEach(function (k) { list.appendChild(makeMatchCard(k, tier)); });
+    group.appendChild(list);
+
+    return group;
+  }
+
+  function iconSvg(name) {
+    var common = 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"';
+    if (name === 'flame') {
+      return '<svg viewBox="0 0 24 24" ' + common.replace('fill="none"', 'fill="currentColor"') + '><path d="M12 2c1.2 3.5-.4 5.4-1.5 6.7-1.2 1.4-2.2 2.9-2.2 5 0 1.4.6 2.6 1.5 3.4-.7-.3-2-1.3-2.3-3.3-.7 1.6-1.3 3-1 4.6.4 2.7 2.9 4.6 5.5 4.6 3.5 0 6.5-2.8 6.5-6.5 0-6.5-6.5-9-6.5-14.5z"/></svg>';
+    }
+    if (name === 'heart') {
+      return '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="0.5" width="16" height="16"><path d="M12 21s-7-4.4-9-9c-1.4-3.2.6-7 4-7 2 0 3.6 1.2 5 3 1.4-1.8 3-3 5-3 3.4 0 5.4 3.8 4 7-2 4.6-9 9-9 9z"/></svg>';
+    }
+    if (name === 'clock') {
+      return '<svg viewBox="0 0 24 24" ' + common + '><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+    }
+    return '';
+  }
+
+  function renderResult(autoRefreshed) {
+    if (!state.sessionToken) { goto('welcome'); return; }
+    var host = $('[data-slot="result-body"]');
+    var actions = $('[data-slot="result-actions"]');
+    if (!host) return;
+    emptyEl(host);
+
+    // Loading state
+    var loading = document.createElement('div');
+    loading.className = 'result-waiting';
+    loading.innerHTML = '<h3>Tallying matches…</h3><p>Just a second.</p>';
+    host.appendChild(loading);
+    if (actions) actions.hidden = true;
+
+    rpc('get_results', { p_session_token: state.sessionToken }).then(function (data) {
+      emptyEl(host);
+      if (!data || data.ready === false) {
+        var box = document.createElement('div');
+        box.className = 'result-waiting';
+        var who = (data && data.partner_name) ? data.partner_name : 'your partner';
+        box.innerHTML = ''
+          + '<h3>Your answers are saved.</h3>'
+          + '<p>Open results once ' + escapeHtml(who) + ' has finished.</p>';
+        var checkBtn = document.createElement('button');
+        checkBtn.type = 'button';
+        checkBtn.className = 'btn btn--primary';
+        checkBtn.textContent = 'Check again';
+        checkBtn.addEventListener('click', function () { renderResult(true); });
+        box.appendChild(checkBtn);
+
+        var leaveBtn = document.createElement('button');
+        leaveBtn.type = 'button';
+        leaveBtn.className = 'btn btn--quiet btn--quiet-danger';
+        leaveBtn.textContent = 'Start a new session';
+        leaveBtn.addEventListener('click', onResultDelete);
+        host.appendChild(box);
+        host.appendChild(leaveBtn);
+        return;
+      }
+
+      var anytime = data.both_anytime || [];
+      var keen    = data.both_keen    || [];
+      var talk    = data.worth_talking|| [];
+      var total   = anytime.length + keen.length + talk.length;
+
+      // Hero
+      var hero = document.createElement('div');
+      hero.className = 'result-hero';
+      hero.innerHTML = ''
+        + '<div class="result-count">' + total + '</div>'
+        + '<div class="result-count-label">things you both want</div>'
+        + '<div class="result-privacy">Only mutual answers show. The rest stays private.</div>';
+      host.appendChild(hero);
+
+      if (total === 0) {
+        var empty = document.createElement('div');
+        empty.className = 'result-empty';
+        empty.innerHTML = '<strong>No overlaps this round.</strong><p>Try a fresh set when you both feel like it.</p>';
+        host.appendChild(empty);
+      } else {
+        if (anytime.length) host.appendChild(makeMatchGroup('anytime', 'Both said anytime', iconSvg('flame'), anytime));
+        if (keen.length)    host.appendChild(makeMatchGroup('keen',    'Both keen',         iconSvg('heart'), keen));
+        if (talk.length)    host.appendChild(makeMatchGroup('talk',    'Worth talking about', iconSvg('clock'), talk));
+      }
+
+      if (actions) actions.hidden = false;
+    }).catch(function (err) {
+      emptyEl(host);
+      var box = document.createElement('div');
+      box.className = 'result-waiting';
+      box.innerHTML = '<h3>Could not load results</h3><p>' + escapeHtml(describeError(err, 'get_results failed')) + '</p>';
+      var retry = document.createElement('button');
+      retry.type = 'button';
+      retry.className = 'btn btn--primary';
+      retry.textContent = 'Try again';
+      retry.addEventListener('click', function () { renderResult(true); });
+      box.appendChild(retry);
+      host.appendChild(box);
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c];
+    });
+  }
+
+  function onResultShare() {
+    var url = window.location.href;
+    var text = 'We just tried Crave — see what you both want. ' + url;
+    if (navigator.share) {
+      navigator.share({ title: 'Crave', text: text }).catch(function () { /* user cancelled */ });
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () {
+        showResultToast('Link copied');
+      });
+    }
+  }
+
+  function showResultToast(text) {
+    var t = document.createElement('div');
+    t.className = 'form-error';
+    t.style.position = 'fixed';
+    t.style.left = '50%';
+    t.style.bottom = '24px';
+    t.style.transform = 'translateX(-50%)';
+    t.style.zIndex = '999';
+    t.style.color = '#FF8FB6';
+    t.style.background = '#1A1216';
+    t.style.borderColor = 'rgba(255,46,116,.35)';
+    t.textContent = text;
+    document.body.appendChild(t);
+    window.setTimeout(function () { t.remove(); }, 1800);
+  }
+
+  function onResultPick() {
+    // The brief allows a basic list here; we just scroll the first group
+    // into view so the user can pick visually.
+    var firstGroup = document.querySelector('.match-group');
+    if (firstGroup && firstGroup.scrollIntoView) {
+      firstGroup.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  async function onResultDelete() {
+    if (!state.sessionToken) {
+      hardReset();
+      goto('welcome');
+      return;
+    }
+    if (!window.confirm('Delete this session and both sets of answers? This cannot be undone.')) {
+      return;
+    }
+    try {
+      await rpc('delete_couple_data', { p_session_token: state.sessionToken });
+    } catch (err) {
+      describeError(err, 'delete_couple_data failed');
+    }
+    hardReset();
+    goto('welcome');
+  }
+
+  function hardReset() {
+    clearSession();
+    state.name = '';
+    state.gender = null;
+    state.sessionToken = null;
+    state.partnerName = null;
+    state.deck = [];
+    state.answers = {};
+    state.qIndex = 0;
   }
 
   // -----------------------------------------------------------------------
@@ -513,28 +887,32 @@
   async function tryRestoreSession() {
     var saved = loadSession();
     if (!saved || !saved.sessionToken) return false;
-
-    // Leave the splash visible while we ask the server — it's better than
-    // a blank screen during the round-trip. If the call returns valid
-    // state, goto('question') will replace it; if it fails, we stay on
-    // splash and start fresh.
     try {
       var st = await rpc('get_my_state', { p_session_token: saved.sessionToken });
-      if (!st || !st.user) {
-        clearSession();
-        return false;
-      }
+      if (!st || !st.user) { clearSession(); return false; }
+
       state.sessionToken = saved.sessionToken;
       state.name = st.user.name;
-      state.role = st.user.role;
+      state.gender = st.user.gender;
       state.partnerName = (st.partner && st.partner.name) || null;
 
-      // For chunk 3 we always land users on the first question card.
-      // Later chunks will use my_answers / completed_at to jump to the
-      // right question, the waiting screen, or results.
-      state.currentQuestionIndex = 0;
-      renderCurrentQuestion();
-      goto('question', { skipAnim: true });
+      // Reseed answers from server.
+      state.answers = {};
+      var arr = st.my_answers || [];
+      for (var i = 0; i < arr.length; i++) {
+        state.answers[arr[i].match_key] = arr[i].response;
+      }
+
+      if (st.user.completed_at) {
+        // User already done — straight to result.
+        goto('result', { skipAnim: true });
+        renderResult();
+      } else {
+        // Resume the questionnaire at the next unanswered card.
+        buildDeckAndIndex();
+        renderQuestion(true);
+        goto('question', { skipAnim: true });
+      }
       return true;
     } catch (err) {
       describeError(err, 'session restore failed');
@@ -544,93 +922,69 @@
   }
 
   // -----------------------------------------------------------------------
-  // Wire up DOM events
+  // Wire-up
   // -----------------------------------------------------------------------
 
-  function bind(sel, ev, fn) {
-    var el = document.querySelector(sel);
-    if (el) el.addEventListener(ev, fn);
-  }
-
-  function bindAll(sel, ev, fn) {
-    document.querySelectorAll(sel).forEach(function (el) {
-      el.addEventListener(ev, fn);
-    });
-  }
-
   function bindEvents() {
-    // Splash
-    bind('[data-action="splash-start"]', 'click', onSplashStart);
+    // Logos
+    mountLogos();
+
+    // Welcome
+    $('[data-action="welcome-start"]').addEventListener('click', onWelcomeStart);
 
     // Name
-    var nameInput = document.getElementById('input-name');
+    var nameInput = $('#input-name');
     if (nameInput) {
       nameInput.addEventListener('input', onNameInput);
       nameInput.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          if (nameInput.value.trim().length >= 2) onNameNext();
+        if (e.key === 'Enter' && nameInput.value.trim().length >= 1) {
+          e.preventDefault(); onNameNext();
         }
       });
     }
-    bind('[data-action="name-next"]', 'click', onNameNext);
+    $('[data-action="name-next"]').addEventListener('click', onNameNext);
 
-    // Role
-    bindAll('[data-role]', 'click', onRoleSelect);
+    // Gender
+    $$('[data-gender]').forEach(function (b) { b.addEventListener('click', onGenderSelect); });
 
-    // PIN
-    var pinInput = document.getElementById('input-pin');
-    if (pinInput) {
-      pinInput.addEventListener('input', onPinInput);
-      pinInput.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          var btn = document.querySelector('[data-action="pin-next"]');
-          if (btn && !btn.disabled) onPinNext();
-        }
-      });
-    }
-    bind('[data-action="pin-next"]', 'click', onPinNext);
+    // Code boxes
+    $$('#screen-code .code-box').forEach(function (b) {
+      b.addEventListener('input', onCodeBoxInput);
+      b.addEventListener('keydown', onCodeBoxKeydown);
+      b.addEventListener('paste', onCodePaste);
+    });
+    $('[data-action="code-join"]').addEventListener('click', onCodeJoin);
+    $('[data-action="code-create"]').addEventListener('click', onCodeCreate);
+    $('[data-action="code-created-continue"]').addEventListener('click', onCodeCreatedContinue);
 
-    // Partner confirmation
-    bind('[data-action="confirm-yes"]', 'click', onConfirmYes);
-    bind('[data-action="confirm-no"]',  'click', onConfirmNo);
+    // Ready / Relax
+    $('[data-action="ready-go"]').addEventListener('click', onReadyGo);
+    $('[data-action="relax-skip"]').addEventListener('click', onRelaxSkip);
 
-    // PIN created confirmation
-    bind('[data-action="pin-created-continue"]', 'click', onPinCreatedContinue);
+    // Question
+    $$('#screen-question .rating-btn').forEach(function (b) { b.addEventListener('click', onRatingTap); });
+    $('[data-action="question-back"]').addEventListener('click', onQuestionBack);
 
-    // How / Privacy
-    bind('[data-action="how-continue"]',     'click', onHowContinue);
-    bind('[data-action="privacy-continue"]', 'click', onPrivacyContinue);
+    // Result
+    $('[data-action="result-share"]').addEventListener('click', onResultShare);
+    $('[data-action="result-pick"]').addEventListener('click', onResultPick);
+    $('[data-action="result-delete"]').addEventListener('click', onResultDelete);
+
+    // Generic Back chevrons (steps 2-4).
+    $$('[data-action="back"]').forEach(function (b) { b.addEventListener('click', onBackTap); });
   }
 
-  // -----------------------------------------------------------------------
-  // Boot
-  // -----------------------------------------------------------------------
-
   async function init() {
-    // If the dev-preview override (?screen=…) is in use, leave it alone but
-    // still wire up handlers so the dev can click through.
-    var params = new URLSearchParams(window.location.search);
-    if (params.get('screen')) {
-      bindEvents();
-      return;
-    }
-
     bindEvents();
 
     var saved = loadSession();
     if (!saved || !saved.sessionToken) {
-      // No saved session — splash is already visible from the HTML default.
-      state.currentScreen = 'splash';
+      // Splash already visible from the HTML default.
+      state.currentScreen = 'welcome';
       return;
     }
-
     var restored = await tryRestoreSession();
-    if (!restored) {
-      // Restore failed — fall back to splash with no animation.
-      goto('splash', { skipAnim: true });
-    }
+    if (!restored) goto('welcome', { skipAnim: true });
   }
 
   if (document.readyState === 'loading') {

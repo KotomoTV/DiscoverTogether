@@ -1,90 +1,95 @@
--- Crave — Supabase schema, RLS, and RPC functions.
+-- =========================================================================
+-- Crave — fix3.sql
 --
--- Paste into the Supabase SQL editor and run. The file is idempotent
--- on a fresh project (CREATE … IF NOT EXISTS, CREATE OR REPLACE FUNCTION).
--- It does NOT migrate the previous schema in place;
--- for the live database upgrade run supabase/fix3.sql first.
+-- Live-database migration from the v1 (pre-Crave) schema to the
+-- current Crave schema. Run this once in the Supabase SQL Editor and
+-- the live database will match supabase/schema.sql.
 --
--- Architecture notes:
---   * No Supabase Auth. Identity = a server-issued opaque session_token
---     stored on the user row and held in the browser's localStorage.
---   * The publishable anon key is shipped in the client. RLS is enabled
---     on every table with NO policies, denying all direct table access.
---     All reads/writes go through the SECURITY DEFINER RPC functions
---     below, which validate the session_token themselves and never leak
---     a partner's individual answers.
---   * The 4-digit code is hashed in the browser (SHA-256 + fixed salt)
---     before it ever leaves the device.
---   * Answers are keyed by match_key (string), not question id, so the
---     server can pair a "her" question and the complementary "him"
---     question without knowing the deck text.
+-- What changes:
+--   * couples.pin_hash         → couples.code_hash
+--   * users.role ('her'|'him') → users.gender ('woman'|'man')
+--   * users (couple_id, role) UNIQUE is dropped
+--   * answers.question_id INT  → answers.match_key TEXT
+--   * RPCs prepare_join + commit_join are dropped and replaced with
+--     create_session + join_session (no partner-confirmation step).
 --
--- pgcrypto lives in the `extensions` schema on Supabase. Every call
--- below is schema-qualified, and every SECURITY DEFINER function has
--- `set search_path = public, extensions` for safety.
-
--- =========================================================================
--- Extensions
--- =========================================================================
-
-create schema if not exists extensions;
-create extension if not exists "pgcrypto" with schema extensions;
-
--- =========================================================================
--- Tables
+-- Data: all existing rows in couples, users, and answers are deleted
+-- before the column changes. The previous deployment was a test bed;
+-- there is no production data to preserve, and the question_id integers
+-- would not map cleanly to the new string match_keys anyway.
+--
+-- Safe to run on a fresh Crave schema (the DROPs are IF EXISTS, the
+-- column ops are idempotent: nothing happens if columns already match).
 -- =========================================================================
 
-create table if not exists public.couples (
-  id          uuid        primary key default extensions.gen_random_uuid(),
-  code_hash   text        not null unique,
-  created_at  timestamptz not null default now()
-);
+begin;
 
-create table if not exists public.users (
-  id             uuid        primary key default extensions.gen_random_uuid(),
-  couple_id      uuid        not null references public.couples(id) on delete cascade,
-  name           text        not null check (char_length(name) between 1 and 80),
-  gender         text        not null check (gender in ('woman', 'man')),
-  session_token  text        not null unique,
-  joined_at      timestamptz not null default now(),
-  completed_at   timestamptz
-);
+-- Step 1: wipe test data (cascades to users + answers).
+delete from public.couples;
 
-create index if not exists users_couple_id_idx on public.users (couple_id);
+-- Step 2: rename couples.pin_hash → code_hash (idempotent).
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='couples' and column_name='pin_hash'
+  ) then
+    alter table public.couples rename column pin_hash to code_hash;
+  end if;
+end$$;
 
-create table if not exists public.answers (
-  id           uuid        primary key default extensions.gen_random_uuid(),
-  user_id      uuid        not null references public.users(id) on delete cascade,
-  match_key    text        not null check (char_length(match_key) between 1 and 80),
-  response     int         not null check (response between 1 and 4),
-  answered_at  timestamptz not null default now(),
-  unique (user_id, match_key)
-);
+-- Step 3: drop the role-uniqueness constraint (was: couple_id + role).
+alter table public.users drop constraint if exists users_couple_id_role_key;
 
-create index if not exists answers_user_id_idx on public.answers (user_id);
+-- Step 4: rename users.role → gender and swap the CHECK constraint.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='users' and column_name='role'
+  ) then
+    alter table public.users rename column role to gender;
+  end if;
+end$$;
 
--- Idempotent re-pin of column defaults (no-op on fresh installs).
-alter table public.couples alter column id set default extensions.gen_random_uuid();
-alter table public.users   alter column id set default extensions.gen_random_uuid();
-alter table public.answers alter column id set default extensions.gen_random_uuid();
+alter table public.users drop constraint if exists users_role_check;
+alter table public.users drop constraint if exists users_gender_check;
+alter table public.users add  constraint users_gender_check check (gender in ('woman', 'man'));
 
--- =========================================================================
--- Row Level Security: lock everything down. All access via RPCs.
--- =========================================================================
+-- Step 5: replace answers.question_id (INT 1..55) with match_key (TEXT).
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='answers' and column_name='question_id'
+  ) then
+    alter table public.answers drop constraint if exists answers_user_id_question_id_key;
+    alter table public.answers drop constraint if exists answers_question_id_check;
+    alter table public.answers drop column question_id;
+  end if;
 
-alter table public.couples enable row level security;
-alter table public.users   enable row level security;
-alter table public.answers enable row level security;
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='answers' and column_name='match_key'
+  ) then
+    alter table public.answers add column match_key text not null;
+  end if;
+end$$;
 
--- Intentionally NO policies. With RLS on and no policies, the anon role
--- cannot select/insert/update/delete these tables directly. The
--- SECURITY DEFINER functions below run as the table owner and bypass RLS.
+alter table public.answers drop constraint if exists answers_match_key_check;
+alter table public.answers add  constraint answers_match_key_check
+  check (char_length(match_key) between 1 and 80);
 
--- =========================================================================
--- Helpers
--- =========================================================================
+alter table public.answers drop constraint if exists answers_user_id_match_key_key;
+alter table public.answers add  constraint answers_user_id_match_key_key unique (user_id, match_key);
 
--- 256 bits of entropy, base64url-encoded.
+-- Step 6: drop old RPCs so the role/question_id signatures don't linger.
+drop function if exists public.prepare_join(text, text);
+drop function if exists public.commit_join(text, text, text);
+drop function if exists public.submit_answer(text, int, int);
+
+-- Step 7: install the new RPCs. These mirror the bodies in schema.sql.
+
 create or replace function public._generate_session_token()
 returns text
 language plpgsql
@@ -98,7 +103,6 @@ begin
 end;
 $$;
 
--- Resolve a session token to a user row. Raises on invalid token.
 create or replace function public._user_for_token(p_session_token text)
 returns public.users
 language plpgsql
@@ -118,21 +122,6 @@ begin
   return v_user;
 end;
 $$;
-
--- =========================================================================
--- RPC: create_session
---
--- The "Create a new code" path. The client generates a random 4-digit
--- code, hashes it, and asks us to claim it. If a couple already exists
--- with that code_hash, we return `code_in_use` so the client can roll a
--- new digit and retry.
---
--- Returns:
---   { user_id, session_token, gender }
--- Raises:
---   code_in_use     (23505) — collision; client should regenerate the code
---   invalid_…       (22023) — bad input
--- =========================================================================
 
 create or replace function public.create_session(
   p_code_hash text,
@@ -179,20 +168,6 @@ begin
   );
 end;
 $$;
-
--- =========================================================================
--- RPC: join_session
---
--- The "Join" path. The other partner types the code; we hash it and
--- add this user to the existing couple. The couple must already exist
--- and have room.
---
--- Returns:
---   { user_id, session_token, gender, partner_name }
--- Raises:
---   code_not_found  (no row)
---   couple_full     (already two users)
--- =========================================================================
 
 create or replace function public.join_session(
   p_code_hash text,
@@ -247,21 +222,6 @@ begin
 end;
 $$;
 
--- =========================================================================
--- RPC: get_my_state
---
--- Bootstrap info for the client: who am I, has my partner finished,
--- and what answers have I already recorded (so the questions screen
--- can resume after a reload).
---
--- Returns:
---   {
---     user:    { id, name, gender, completed_at },
---     partner: { name, gender, completed } | null,
---     my_answers: [{ match_key, response }, ...]
---   }
--- =========================================================================
-
 create or replace function public.get_my_state(p_session_token text)
 returns jsonb
 language plpgsql
@@ -308,13 +268,6 @@ begin
 end;
 $$;
 
--- =========================================================================
--- RPC: submit_answer
---
--- Upserts one answer (keyed by match_key). Locked once the user has
--- marked themselves complete.
--- =========================================================================
-
 create or replace function public.submit_answer(
   p_session_token text,
   p_match_key     text,
@@ -348,12 +301,6 @@ begin
 end;
 $$;
 
--- =========================================================================
--- RPC: complete_questionnaire
---
--- Marks the caller as done. Idempotent. Locks further edits.
--- =========================================================================
-
 create or replace function public.complete_questionnaire(p_session_token text)
 returns jsonb
 language plpgsql
@@ -375,30 +322,6 @@ begin
   return jsonb_build_object('completed_at', v_me.completed_at);
 end;
 $$;
-
--- =========================================================================
--- RPC: get_results
---
--- Returns categorized match keys, but only once BOTH partners have
--- marked themselves complete. Never returns individual responses, only
--- the bucket each match_key landed in.
---
--- Buckets:
---   both_anytime  : (4, 4)
---   both_keen     : (3, 3), (3, 4), (4, 3)
---   worth_talking : (2, 3), (3, 2), (2, 4), (4, 2)
---   hidden        : any 1, or (2, 2)  — omitted entirely
---
--- Returns:
---   {
---     ready: true|false,
---     partner_name?:  text,             -- when !ready
---     partner_present: boolean,         -- false when this user is alone
---     both_anytime:   [match_key, ...],
---     both_keen:      [match_key, ...],
---     worth_talking:  [match_key, ...]
---   }
--- =========================================================================
 
 create or replace function public.get_results(p_session_token text)
 returns jsonb
@@ -464,12 +387,6 @@ begin
 end;
 $$;
 
--- =========================================================================
--- RPC: delete_couple_data
---
--- Wipes the entire couple, both users, and all answers. Cascades.
--- =========================================================================
-
 create or replace function public.delete_couple_data(p_session_token text)
 returns void
 language plpgsql
@@ -484,11 +401,7 @@ begin
 end;
 $$;
 
--- =========================================================================
--- Permissions: expose only the RPCs to anon and authenticated roles.
--- Tables remain unreachable (RLS on, no policies).
--- =========================================================================
-
+-- Step 8: re-grant.
 revoke all on public.couples from anon, authenticated;
 revoke all on public.users   from anon, authenticated;
 revoke all on public.answers from anon, authenticated;
@@ -503,6 +416,27 @@ grant execute on function public.complete_questionnaire(text)            to anon
 grant execute on function public.get_results(text)                       to anon, authenticated;
 grant execute on function public.delete_couple_data(text)                to anon, authenticated;
 
--- Internal helpers stay locked down.
 revoke all on function public._generate_session_token()       from anon, authenticated;
 revoke all on function public._user_for_token(text)           from anon, authenticated;
+
+commit;
+
+-- =========================================================================
+-- Smoke test (outside the transaction so a failure here doesn't roll
+-- back the migration).
+--
+-- Generates a random code-hash, calls create_session, and immediately
+-- deletes the couple it created. Returns a single jsonb row with the
+-- new user_id + session_token + gender — proves end-to-end that the
+-- RPC, the search_path, and gen_random_bytes all work.
+-- =========================================================================
+
+do $$
+declare
+  v_hash text := encode(extensions.gen_random_bytes(32), 'hex');
+  v_resp jsonb;
+begin
+  v_resp := public.create_session(v_hash, 'smoke', 'woman');
+  raise notice 'create_session OK: %', v_resp;
+  delete from public.couples where code_hash = v_hash;
+end$$;

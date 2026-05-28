@@ -2,16 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Discover Together</title>
-  <meta name="description" content="A private space for couples to explore what you both want, on your own phones." />
+  <title>Crave</title>
+  <meta name="description" content="What do you both really want? Crave is a private space for couples to discover what you're both into." />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#722F37" />
-  <meta name="color-scheme" content="light" />
+  <meta name="theme-color" content="#0A0A0A" />
+  <meta name="color-scheme" content="dark" />
 
   <!-- iOS web-app polish -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="Discover Together" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Crave" />
   <meta name="format-detection" content="telephone=no" />
 
   <!-- Manifest & icons -->
@@ -19,12 +19,12 @@
   <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.svg" />
 
-  <!-- Google Fonts: serif headings (Fraunces) + sans body (Inter) -->
+  <!-- Inter for everything; no serif this round (the brief uses one variable family). -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
     rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
   />
 
   <link rel="stylesheet" href="css/styles.css" />
@@ -33,313 +33,340 @@
   <main class="app" id="app">
 
     <!-- =====================================================================
-         Screen 1: Splash / Landing
+         Screen 1: Welcome / How it works
          ===================================================================== -->
-    <section class="screen" id="screen-splash" aria-labelledby="splash-title">
-      <div class="brand">
-        <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-          <path d="M32 54 C32 54 8 40 8 24 C8 16 14 10 22 10 C26 10 30 12 32 16 C34 12 38 10 42 10 C50 10 56 16 56 24 C56 40 32 54 32 54 Z" fill="#722F37"/>
-        </svg>
-        <h1 class="brand-name" id="splash-title">Discover Together</h1>
-        <p class="brand-tagline">Explore what you both want, privately.</p>
+    <section class="screen screen--center" id="screen-welcome" aria-labelledby="welcome-title">
+      <div class="brand-hero">
+        <span class="brand-mark brand-mark--lg" data-logo="welcome" aria-hidden="true"></span>
+        <h1 class="brand-name" id="welcome-title">Crave</h1>
+        <p class="brand-tagline">What do you both really want?</p>
       </div>
 
-      <div class="stack" style="margin-top: var(--space-7);">
-        <p class="lead">You'll each answer the same set of intimate questions on your own phone.</p>
-        <p class="lead">When you're both done, you'll see only the scenarios you're both open to, plus a separate list of topics worth discussing. Anything either of you said <em>No Way!</em> to stays private.</p>
-      </div>
+      <ul class="step-list">
+        <li class="step-row" data-tone="wine">
+          <span class="step-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+              <rect x="4" y="10" width="16" height="11" rx="2.5"/>
+              <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+            </svg>
+          </span>
+          <span class="step-text">Answer privately on your own phone</span>
+        </li>
+        <li class="step-row" data-tone="orange">
+          <span class="step-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+              <circle cx="9"  cy="8" r="3.4"/>
+              <circle cx="17" cy="9" r="2.7"/>
+              <path d="M2 20c0-3.2 3.1-5.5 7-5.5s7 2.3 7 5.5"/>
+              <path d="M14.6 20c.2-2.4 2-4.1 5-4.4"/>
+            </svg>
+          </span>
+          <span class="step-text">Your partner answers on theirs</span>
+        </li>
+        <li class="step-row" data-tone="pink">
+          <span class="step-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+              <path d="M12 22c-1-2.4-5.5-4.4-5.5-9 0-2.5 1.5-4.5 3.5-4.5 1 0 1.8.4 2 1 .8-2 1.4-4 1.4-6 2 1.6 4 4.4 4 7 1.5 0 3 1.8 3 4 0 4.6-4.4 6.6-5.4 9 0 0-1.5-.4-3-.5z"/>
+            </svg>
+          </span>
+          <span class="step-text">See only what you both said yes to</span>
+        </li>
+      </ul>
 
       <div class="screen-actions">
-        <button type="button" class="btn btn--primary" data-action="splash-start">Get Started</button>
+        <button type="button" class="btn btn--primary" data-action="welcome-start">Get started</button>
       </div>
     </section>
 
     <!-- =====================================================================
-         Screen 2: Enter Name
+         Screen 2: Your name
          ===================================================================== -->
     <section class="screen" id="screen-name" aria-labelledby="name-title" hidden>
-      <div class="screen-header">
-        <p class="eyebrow">Step 1 of 3</p>
-        <h2 id="name-title">What's your name?</h2>
-        <p class="muted">Just a first name is fine. Your partner will see it when they join.</p>
-      </div>
-
-      <div class="field" style="margin-top: var(--space-5);">
-        <label class="sr-only" for="input-name">Your name</label>
-        <input
-          id="input-name"
-          class="input"
-          type="text"
-          inputmode="text"
-          autocomplete="given-name"
-          autocapitalize="words"
-          maxlength="80"
-          placeholder="Your name"
-        />
-      </div>
-
-      <div class="screen-actions">
-        <button type="button" class="btn btn--primary" data-action="name-next" disabled aria-disabled="true">Next</button>
-      </div>
-    </section>
-
-    <!-- =====================================================================
-         Screen 3: Choose Role
-         ===================================================================== -->
-    <section class="screen" id="screen-role" aria-labelledby="role-title" hidden>
-      <div class="screen-header">
-        <p class="eyebrow">Step 2 of 3</p>
-        <h2 id="role-title">Are you&hellip;</h2>
-        <p class="muted">A few of the questions have different wording for each partner. This just picks which version you'll see.</p>
-      </div>
-
-      <div class="stack" style="margin-top: var(--space-5);">
-        <button type="button" class="btn btn--role" data-role="her">Her</button>
-        <button type="button" class="btn btn--role" data-role="him">Him</button>
-      </div>
-    </section>
-
-    <!-- =====================================================================
-         Screen 4: Enter Shared PIN
-         ===================================================================== -->
-    <section class="screen" id="screen-pin" aria-labelledby="pin-title" hidden>
-      <div class="screen-header">
-        <p class="eyebrow">Step 3 of 3</p>
-        <h2 id="pin-title">Enter your shared PIN</h2>
-        <p class="muted">Agree on a 4 to 6 digit code with your partner. Whoever enters it first creates the couple; the second person enters the same code to join.</p>
-      </div>
-
-      <div class="field" style="margin-top: var(--space-5);">
-        <label class="sr-only" for="input-pin">Shared PIN</label>
-        <input
-          id="input-pin"
-          class="input input--pin"
-          type="text"
-          inputmode="numeric"
-          pattern="[0-9]*"
-          autocomplete="off"
-          maxlength="6"
-          placeholder="0000"
-          aria-describedby="pin-help"
-        />
-        <p class="small" id="pin-help">4 to 6 digits</p>
-      </div>
-
-      <div class="screen-actions">
-        <button type="button" class="btn btn--primary" data-action="pin-next" disabled aria-disabled="true">Next</button>
-      </div>
-    </section>
-
-    <!-- =====================================================================
-         Screen 4c: PIN Created (shown only to the first partner, right
-         after commit_join succeeds for an `empty` PIN). Gives them the
-         PIN to share with their partner before continuing.
-         ===================================================================== -->
-    <section class="screen" id="screen-pin-created" aria-labelledby="pin-created-title" hidden>
-      <div class="screen-header">
-        <h2 id="pin-created-title">PIN created!</h2>
-        <p class="lead muted">Share this PIN with your partner so they can join:</p>
-      </div>
-
-      <p class="pin-display" data-slot="pin-value" aria-live="polite">0000</p>
-
-      <p class="small center">Your partner enters the same PIN on their phone and picks the opposite role.</p>
-
-      <div class="screen-actions">
-        <button type="button" class="btn btn--primary" data-action="pin-created-continue">Continue</button>
-      </div>
-    </section>
-
-    <!-- =====================================================================
-         Screen 4b: Partner Confirmation
-         ===================================================================== -->
-    <section class="screen" id="screen-confirm-partner" aria-labelledby="confirm-title" hidden>
-      <div class="screen-header">
-        <h2 id="confirm-title">Joining <span data-slot="partner-name">your partner</span></h2>
-        <p class="lead muted">Is this your partner?</p>
-      </div>
-
-      <div class="screen-actions">
-        <button type="button" class="btn btn--primary" data-action="confirm-yes">Yes, that's us</button>
-        <button type="button" class="btn btn--secondary" data-action="confirm-no">No, wrong PIN</button>
-      </div>
-    </section>
-
-    <!-- =====================================================================
-         Screen 5: How It Works
-         ===================================================================== -->
-    <section class="screen" id="screen-how" aria-labelledby="how-title" hidden>
-      <div class="screen-header">
-        <h2 id="how-title">How it works</h2>
-        <p class="lead muted">You'll see a series of scenarios starting with <em>"What do you think about&hellip;"</em>. For each, choose one of four answers:</p>
-      </div>
-
-      <ul class="answer-legend">
-        <li class="answer-legend-row">
-          <span class="answer-chip answer-chip--no-way">No Way!</span>
-          <span class="answer-legend-meaning">Not for me</span>
-        </li>
-        <li class="answer-legend-row">
-          <span class="answer-chip answer-chip--think">I need to think</span>
-          <span class="answer-legend-meaning">Maybe, but I'm not sure</span>
-        </li>
-        <li class="answer-legend-row">
-          <span class="answer-chip answer-chip--maybe">Maybe once</span>
-          <span class="answer-legend-meaning">I'd try it</span>
-        </li>
-        <li class="answer-legend-row">
-          <span class="answer-chip answer-chip--anytime">Anytime!</span>
-          <span class="answer-legend-meaning">I'm into it</span>
-        </li>
-      </ul>
-
-      <div class="screen-actions">
-        <button type="button" class="btn btn--primary" data-action="how-continue">Got it</button>
-      </div>
-    </section>
-
-    <!-- =====================================================================
-         Screen 6: Privacy Promise
-         ===================================================================== -->
-    <section class="screen" id="screen-privacy" aria-labelledby="privacy-title" hidden>
-      <div class="screen-header">
-        <h2 id="privacy-title">How your answers will be sorted</h2>
-        <p class="muted">When you're both done, every scenario lands in one of three places. You'll only ever see the first two.</p>
-      </div>
-
-      <div class="stack-sm">
-        <article class="bucket-block">
-          <h3 class="bucket-title">To-Do List</h3>
-          <p class="bucket-body">Scenarios you both said <em>Maybe once</em> or <em>Anytime!</em> to.</p>
-        </article>
-
-        <article class="bucket-block">
-          <h3 class="bucket-title">To Discuss</h3>
-          <p class="bucket-body">Scenarios where at least one of you said <em>I need to think</em> (and no one refused). Worth a conversation.</p>
-        </article>
-
-        <article class="bucket-block">
-          <h3 class="bucket-title">Hidden</h3>
-          <p class="bucket-body">Anything either of you said <em>No Way!</em> to. Never revealed to the other partner.</p>
-        </article>
-      </div>
-
-      <div class="screen-actions">
-        <button type="button" class="btn btn--primary" data-action="privacy-continue">I'm ready</button>
-      </div>
-    </section>
-
-    <!-- =====================================================================
-         Screen 7: Question Card
-         ===================================================================== -->
-    <section class="screen" id="screen-question" aria-labelledby="question-prompt" hidden>
-      <header class="q-header">
-        <span class="eyebrow" data-slot="phase-name">Phase 1: Sensual Connection</span>
-        <span class="q-progress" data-slot="progress">1 / 55</span>
+      <header class="top-bar">
+        <span class="brand-lockup">
+          <span class="brand-mark" data-logo="name-top" aria-hidden="true"></span>
+          <span class="brand-wordmark">Crave</span>
+        </span>
+        <button type="button" class="icon-btn" data-action="back" aria-label="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
       </header>
 
-      <p class="q-prompt" id="question-prompt">
-        <span class="q-prompt-lead">What do you think about</span>
-        <span data-slot="question-text">bathing together by candlelight?</span>
-      </p>
+      <div class="screen-body">
+        <div class="screen-header">
+          <h2 id="name-title" class="h-screen">What's your name?</h2>
+          <p class="muted">Your partner sees this while you both answer.</p>
+        </div>
 
-      <div class="answer-buttons">
-        <button type="button" class="answer-btn answer-btn--no-way"  data-response="1">No Way!</button>
-        <button type="button" class="answer-btn answer-btn--think"   data-response="2">I need to think</button>
-        <button type="button" class="answer-btn answer-btn--maybe"   data-response="3">Maybe once</button>
-        <button type="button" class="answer-btn answer-btn--anytime" data-response="4">Anytime!</button>
+        <div class="field">
+          <label class="sr-only" for="input-name">Your name</label>
+          <input
+            id="input-name"
+            class="input"
+            type="text"
+            inputmode="text"
+            autocomplete="given-name"
+            autocapitalize="words"
+            maxlength="80"
+            placeholder="Your name"
+          />
+        </div>
       </div>
 
-      <button type="button" class="q-skip" data-action="question-skip">Skip for now</button>
+      <div class="screen-actions">
+        <button type="button" class="btn btn--primary" data-action="name-next" disabled aria-disabled="true">Continue</button>
+      </div>
     </section>
 
     <!-- =====================================================================
-         Screen 8: Completion
+         Screen 3: I am a... (Woman | Man)
          ===================================================================== -->
-    <section class="screen" id="screen-waiting" aria-labelledby="waiting-title" hidden>
-      <div class="card status-card">
-        <p class="display">You're all done!</p>
-        <p class="lead muted">
-          Waiting on <span data-slot="partner-name">your partner</span>&hellip;
+    <section class="screen" id="screen-gender" aria-labelledby="gender-title" hidden>
+      <header class="top-bar">
+        <span class="brand-lockup">
+          <span class="brand-mark" data-logo="gender-top" aria-hidden="true"></span>
+          <span class="brand-wordmark">Crave</span>
+        </span>
+        <button type="button" class="icon-btn" data-action="back" aria-label="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
+      </header>
+
+      <div class="screen-body">
+        <div class="screen-header">
+          <h2 id="gender-title" class="h-screen">I am a…</h2>
+          <p class="muted">Some questions are written for her, some for him.</p>
+        </div>
+
+        <div class="gender-grid">
+          <button type="button" class="gender-card gender-card--woman" data-gender="woman">
+            <span class="gender-card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="30" height="30">
+                <circle cx="12" cy="8" r="5.2"/>
+                <path d="M12 13.2v8"/>
+                <path d="M9 18.2h6"/>
+              </svg>
+            </span>
+            <span class="gender-card-label">Woman</span>
+          </button>
+
+          <button type="button" class="gender-card gender-card--man" data-gender="man">
+            <span class="gender-card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="30" height="30">
+                <circle cx="10" cy="14" r="5.2"/>
+                <path d="M14 10l6-6"/>
+                <path d="M15 4h5v5"/>
+              </svg>
+            </span>
+            <span class="gender-card-label">Man</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         Screen 4: The secret code
+         ===================================================================== -->
+    <section class="screen" id="screen-code" aria-labelledby="code-title" hidden>
+      <header class="top-bar">
+        <span class="brand-lockup">
+          <span class="brand-mark" data-logo="code-top" aria-hidden="true"></span>
+          <span class="brand-wordmark">Crave</span>
+        </span>
+        <button type="button" class="icon-btn" data-action="back" aria-label="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
+      </header>
+
+      <div class="screen-body">
+        <div class="screen-header">
+          <h2 id="code-title" class="h-screen">The secret code</h2>
+          <p class="muted">Ask your partner for their code and type it in.</p>
+        </div>
+
+        <div class="code-input" data-slot="code-input" role="group" aria-label="4-digit code">
+          <input class="code-box" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="off" aria-label="Digit 1"/>
+          <input class="code-box" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="off" aria-label="Digit 2"/>
+          <input class="code-box" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="off" aria-label="Digit 3"/>
+          <input class="code-box" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="off" aria-label="Digit 4"/>
+        </div>
+      </div>
+
+      <div class="screen-actions">
+        <button type="button" class="btn btn--primary" data-action="code-join" disabled aria-disabled="true">Join</button>
+
+        <div class="or-divider"><span>or</span></div>
+
+        <button type="button" class="btn btn--quiet" data-action="code-create">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          <span>Create a new code</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         Screen 4b: Code created (read it aloud)
+         ===================================================================== -->
+    <section class="screen" id="screen-code-created" aria-labelledby="code-created-title" hidden>
+      <header class="top-bar">
+        <span class="brand-lockup">
+          <span class="brand-mark" data-logo="code-created-top" aria-hidden="true"></span>
+          <span class="brand-wordmark">Crave</span>
+        </span>
+      </header>
+
+      <div class="screen-body">
+        <div class="screen-header">
+          <h2 id="code-created-title" class="h-screen">Your secret code</h2>
+          <p class="muted">Read it to your partner so they can type it on their phone.</p>
+        </div>
+
+        <p class="code-display" data-slot="code-value" aria-live="polite">0000</p>
+
+        <p class="micro center">Keep this screen open until they're in.</p>
+      </div>
+
+      <div class="screen-actions">
+        <button type="button" class="btn btn--primary" data-action="code-created-continue">Continue</button>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         Screen 5: Ready?
+         ===================================================================== -->
+    <section class="screen screen--center" id="screen-ready" aria-labelledby="ready-title" hidden>
+      <div class="glow-disc">
+        <span class="brand-mark brand-mark--md" data-logo="ready" aria-hidden="true"></span>
+      </div>
+
+      <div class="ready-text">
+        <h2 id="ready-title" class="h-big">Ready?</h2>
+        <p class="muted">55 questions. Be honest.</p>
+        <p class="muted">You'll only see what you both want.</p>
+      </div>
+
+      <div class="screen-actions">
+        <button type="button" class="btn btn--primary" data-action="ready-go">Let's go</button>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         Screen 6: Relax... now
+         ===================================================================== -->
+    <section class="screen screen--center" id="screen-relax" aria-labelledby="relax-title" hidden>
+      <button type="button" class="relax-tap" data-action="relax-skip" aria-label="Skip">
+        <span class="glow-ring"><span class="glow-dot"></span></span>
+      </button>
+
+      <div class="ready-text">
+        <h2 id="relax-title" class="h-relax">Relax… now</h2>
+        <p class="micro-muted">Dim the lights. Phone close.</p>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         Screen 7: Questions
+         ===================================================================== -->
+    <section class="screen screen--question" id="screen-question" aria-labelledby="question-prompt" hidden>
+      <header class="top-bar top-bar--question">
+        <button type="button" class="icon-btn" data-action="question-back" aria-label="Undo last answer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
+        <span class="brand-lockup">
+          <span class="brand-mark" data-logo="question-top" aria-hidden="true"></span>
+          <span class="brand-wordmark">Crave</span>
+        </span>
+        <span class="q-count" data-slot="q-progress" aria-live="polite">01 / 55</span>
+      </header>
+
+      <div class="progress-bar" aria-hidden="true">
+        <span class="progress-bar-fill" data-slot="q-progress-bar"></span>
+      </div>
+
+      <p class="q-stem">What do you think about</p>
+
+      <article class="q-tile" data-slot="q-tile">
+        <p class="q-text" id="question-prompt" data-slot="q-text">…</p>
+        <p class="q-privacy">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" aria-hidden="true">
+            <rect x="5" y="11" width="14" height="9" rx="2"/>
+            <path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/>
+          </svg>
+          <span>Private to you</span>
         </p>
-      </div>
+      </article>
 
-      <div class="screen-actions">
-        <button type="button" class="btn btn--secondary" data-action="waiting-refresh">Check again</button>
-      </div>
-    </section>
-
-    <section class="screen" id="screen-both-done" aria-labelledby="both-done-title" hidden>
-      <div class="card status-card">
-        <p class="display">You're both done!</p>
-        <p class="lead muted">Ready to see what you have in common?</p>
-      </div>
-
-      <div class="screen-actions">
-        <button type="button" class="btn btn--primary" data-action="see-results">See your results</button>
-      </div>
-    </section>
-
-    <!-- =====================================================================
-         Screen 9: Results
-         ===================================================================== -->
-    <section class="screen" id="screen-results" aria-labelledby="results-title" hidden>
-      <header class="screen-header">
-        <h2 id="results-title">Your shared list</h2>
-        <p class="muted">Individual answers stay private. You'll only see how each scenario landed.</p>
-      </header>
-
-      <section class="results-section" aria-labelledby="todo-title">
-        <h3 class="h2" id="todo-title" style="font-family: var(--font-serif); font-weight:500;">Your To-Do List</h3>
-        <p class="muted" style="margin: var(--space-2) 0 var(--space-4);">Scenarios you're both open to.</p>
-
-        <ul class="results-list" data-slot="todo-list">
-          <li class="result-item">
-            <span class="result-item-label">Bathing together by candlelight</span>
-            <span class="result-item-badge" aria-label="Both said Anytime">&#10084;</span>
-          </li>
-          <li class="result-item">
-            <span class="result-item-label">A whole day naked together at home</span>
-          </li>
-        </ul>
-        <p class="empty-state" data-slot="todo-empty" hidden>No scenarios in your To-Do List yet. That's okay, honest answers are the goal.</p>
-      </section>
-
-      <section class="results-section" aria-labelledby="discuss-title">
-        <h3 class="h2" id="discuss-title" style="font-family: var(--font-serif); font-weight:500;">Worth Discussing</h3>
-        <p class="muted" style="margin: var(--space-2) 0 var(--space-4);">At least one of you is unsure about these. They deserve a conversation, not a verdict.</p>
-
-        <ul class="results-list" data-slot="discuss-list">
-          <li class="result-item">
-            <span class="result-item-label">Sex in a hotel pool or hot tub</span>
-          </li>
-        </ul>
-        <p class="empty-state" data-slot="discuss-empty" hidden>Nothing to discuss right now.</p>
-      </section>
-
-      <div class="screen-actions">
-        <button type="button" class="btn btn--danger" data-action="delete-data">Delete all our data</button>
+      <div class="rating-bar" role="group" aria-label="Your answer">
+        <button type="button" class="rating-btn rating-btn--no-way" data-response="1" aria-label="No way">
+          <span class="rating-btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" width="21" height="21">
+              <path d="M6 6l12 12M18 6L6 18"/>
+            </svg>
+          </span>
+          <span class="rating-btn-label">NO WAY</span>
+        </button>
+        <button type="button" class="rating-btn rating-btn--think" data-response="2" aria-label="Need to think">
+          <span class="rating-btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="21" height="21">
+              <circle cx="12" cy="13" r="7.5"/>
+              <path d="M12 9.5v4l2.6 1.8"/>
+            </svg>
+          </span>
+          <span class="rating-btn-label">NEED TO THINK</span>
+        </button>
+        <button type="button" class="rating-btn rating-btn--maybe" data-response="3" aria-label="Maybe once">
+          <span class="rating-btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="0.5" stroke-linejoin="round" width="21" height="21">
+              <path d="M12 21s-7-4.4-9-9c-1.4-3.2.6-7 4-7 2 0 3.6 1.2 5 3 1.4-1.8 3-3 5-3 3.4 0 5.4 3.8 4 7-2 4.6-9 9-9 9z"/>
+            </svg>
+          </span>
+          <span class="rating-btn-label">MAYBE ONCE</span>
+        </button>
+        <button type="button" class="rating-btn rating-btn--anytime" data-response="4" aria-label="Anytime">
+          <span class="rating-btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" width="22" height="22">
+              <path d="M12 2c1.2 3.5-.4 5.4-1.5 6.7-1.2 1.4-2.2 2.9-2.2 5 0 1.4.6 2.6 1.5 3.4-.7-.3-2-1.3-2.3-3.3-.7 1.6-1.3 3-1 4.6.4 2.7 2.9 4.6 5.5 4.6 3.5 0 6.5-2.8 6.5-6.5 0-6.5-6.5-9-6.5-14.5z"/>
+            </svg>
+          </span>
+          <span class="rating-btn-label">ANYTIME</span>
+        </button>
       </div>
     </section>
 
     <!-- =====================================================================
-         (Optional) Screen: Review Your Answers
-         A "Review your answers" step before final lock, per chunk-1 plan #4.
-         Placeholder structure; logic comes in a later chunk.
+         Screen 8: Result
          ===================================================================== -->
-    <section class="screen" id="screen-review" aria-labelledby="review-title" hidden>
-      <header class="screen-header">
-        <h2 id="review-title">Review your answers</h2>
-        <p class="muted">Last chance to change anything. Once you confirm, your answers are locked in.</p>
+    <section class="screen" id="screen-result" aria-labelledby="result-title" hidden>
+      <header class="top-bar">
+        <span class="brand-lockup">
+          <span class="brand-mark" data-logo="result-top" aria-hidden="true"></span>
+          <span class="brand-wordmark">Crave</span>
+        </span>
+        <button type="button" class="icon-btn" data-action="result-share" aria-label="Share results">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+            <circle cx="18" cy="5"  r="3"/>
+            <circle cx="6"  cy="12" r="3"/>
+            <circle cx="18" cy="19" r="3"/>
+            <path d="M8.6 10.6l6.8-4.2M8.6 13.4l6.8 4.2"/>
+          </svg>
+        </button>
       </header>
 
-      <ul class="results-list" data-slot="review-list">
-        <!-- Populated when this screen is wired up. -->
-      </ul>
+      <div class="screen-body screen-body--result" data-slot="result-body">
+        <!-- Populated by app.js. -->
+      </div>
 
-      <div class="screen-actions">
-        <button type="button" class="btn btn--primary" data-action="review-confirm">Lock in my answers</button>
-        <button type="button" class="btn btn--ghost"   data-action="review-back">Go back and change something</button>
+      <div class="screen-actions" data-slot="result-actions" hidden>
+        <button type="button" class="btn btn--primary" data-action="result-pick">Pick where to start</button>
+        <button type="button" class="btn btn--quiet btn--quiet-danger" data-action="result-delete">Delete all our data</button>
       </div>
     </section>
 
@@ -352,23 +379,7 @@
   <!-- Supabase JS client (loaded from CDN; all DB access is via SECURITY DEFINER RPCs) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- Dev preview only: lets you visit ?screen=role to inspect any screen
-       on the live site without going through the flow. Safe to leave in. -->
-  <script>
-    (function () {
-      var params = new URLSearchParams(window.location.search);
-      var requested = params.get("screen");
-      if (!requested) return;
-      var target = document.getElementById("screen-" + requested);
-      if (!target) return;
-      document.querySelectorAll(".screen").forEach(function (el) {
-        if (el !== target) el.hidden = true;
-      });
-      target.hidden = false;
-    })();
-  </script>
-
-  <!-- App controller (navigation, PIN flow, session restore) -->
+  <!-- App controller -->
   <script src="js/app.js"></script>
 </body>
 </html>

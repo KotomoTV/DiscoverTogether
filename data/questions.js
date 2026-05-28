@@ -1,210 +1,331 @@
-// Discover Together — full 55-question set.
+// Crave — full question deck.
 //
-// Each item:
-//   id          1..55, display order
-//   phase       1..10
-//   phaseName   shown above the question card
-//   split       true if Her/Him versions differ
-//   text        used when !split
-//   textHer     used when split && role === 'her'
-//   textHim     used when split && role === 'him'
-//   resultLabel neutral wording shown in the To-Do / To-Discuss lists
+// Schema (per the build brief):
+//   id          string, unique across the master list
+//   audience    'her' | 'him' | 'both'   — gates who sees this card
+//   matchKey    string                    — pairs complementary her/him items
+//                                           so they compare on the result screen
+//   category    string                    — phase / theme label
+//   text        string                    — variable phrase rendered inside the
+//                                           question tile (the fixed stem
+//                                           "What do you think about" lives
+//                                           in the screen, not the data)
+//   resultLabel string                    — neutral wording for the result
+//                                           cards (per matchKey)
 //
-// All 8 split questions are at IDs 28, 30, 40, 41, 42, 43, 47, 48.
-// The question prompt template is "What do you think about [text]?",
-// rendered in index.html — store just the activity phrase here.
+// Deck filtering:
+//   woman → audience === 'both' || audience === 'her'
+//   man   → audience === 'both' || audience === 'him'
+//
+// The 8 originally-split items each become two entries (one 'her', one 'him')
+// sharing a matchKey, so each user sees one phrasing and the result screen
+// can still pair them up. 47 'both' + 16 split entries = 63 master items;
+// each user's deck is 47 + 8 = 55 cards.
 
-window.QUESTIONS = [
-  // Phase 1: Sensual Connection
-  { id:  1, phase: 1, phaseName: "Sensual Connection", split: false,
-    text: "bathing together by candlelight",
-    resultLabel: "Bathing together by candlelight" },
-  { id:  2, phase: 1, phaseName: "Sensual Connection", split: false,
-    text: "giving each other erotic massages",
-    resultLabel: "Erotic massages for each other" },
-  { id:  3, phase: 1, phaseName: "Sensual Connection", split: false,
-    text: "having sex in the shower",
-    resultLabel: "Sex in the shower" },
-  { id:  4, phase: 1, phaseName: "Sensual Connection", split: false,
-    text: "spending a whole day naked together at home",
-    resultLabel: "A whole day naked together at home" },
-  { id:  5, phase: 1, phaseName: "Sensual Connection", split: false,
-    text: "sensation play with feathers and soft textures",
-    resultLabel: "Sensation play with feathers and soft textures" },
-  { id:  6, phase: 1, phaseName: "Sensual Connection", split: false,
-    text: "sex with only eye contact and no words",
-    resultLabel: "Sex with only eye contact, no words" },
+window.CRAVE_QUESTIONS = [
+  // ---- Sensual Connection ----
+  { id: 'bathing_candlelight', audience: 'both', matchKey: 'bathing_candlelight',
+    category: 'Sensual Connection',
+    text: 'bathing together by candlelight',
+    resultLabel: 'Bathing together by candlelight' },
+  { id: 'erotic_massages', audience: 'both', matchKey: 'erotic_massages',
+    category: 'Sensual Connection',
+    text: 'giving each other erotic massages',
+    resultLabel: 'Erotic massages for each other' },
+  { id: 'shower_sex', audience: 'both', matchKey: 'shower_sex',
+    category: 'Sensual Connection',
+    text: 'having sex in the shower',
+    resultLabel: 'Sex in the shower' },
+  { id: 'naked_day_home', audience: 'both', matchKey: 'naked_day_home',
+    category: 'Sensual Connection',
+    text: 'spending a whole day naked together at home',
+    resultLabel: 'A whole day naked together at home' },
+  { id: 'feather_play', audience: 'both', matchKey: 'feather_play',
+    category: 'Sensual Connection',
+    text: 'sensation play with feathers and soft textures',
+    resultLabel: 'Sensation play with feathers and soft textures' },
+  { id: 'eye_contact_sex', audience: 'both', matchKey: 'eye_contact_sex',
+    category: 'Sensual Connection',
+    text: 'sex with only eye contact and no words',
+    resultLabel: 'Sex with only eye contact, no words' },
 
-  // Phase 2: Comfort and Rhythm
-  { id:  7, phase: 2, phaseName: "Comfort and Rhythm", split: false,
-    text: "having sex with the lights fully on",
-    resultLabel: "Sex with the lights fully on" },
-  { id:  8, phase: 2, phaseName: "Comfort and Rhythm", split: false,
-    text: "having sex in complete darkness",
-    resultLabel: "Sex in complete darkness" },
-  { id:  9, phase: 2, phaseName: "Comfort and Rhythm", split: false,
-    text: "trying a new position every week for a month",
-    resultLabel: "A new position every week for a month" },
-  { id: 10, phase: 2, phaseName: "Comfort and Rhythm", split: false,
-    text: "having morning sex every day for a week",
-    resultLabel: "Morning sex every day for a week" },
-  { id: 11, phase: 2, phaseName: "Comfort and Rhythm", split: false,
-    text: "a quickie in the morning before work",
-    resultLabel: "A quickie in the morning before work" },
-  { id: 12, phase: 2, phaseName: "Comfort and Rhythm", split: false,
-    text: "mutual masturbation while watching each other",
-    resultLabel: "Mutual masturbation, watching each other" },
+  // ---- Comfort and Rhythm ----
+  { id: 'lights_on', audience: 'both', matchKey: 'lights_on',
+    category: 'Comfort and Rhythm',
+    text: 'having sex with the lights fully on',
+    resultLabel: 'Sex with the lights fully on' },
+  { id: 'lights_off', audience: 'both', matchKey: 'lights_off',
+    category: 'Comfort and Rhythm',
+    text: 'having sex in complete darkness',
+    resultLabel: 'Sex in complete darkness' },
+  { id: 'position_per_week', audience: 'both', matchKey: 'position_per_week',
+    category: 'Comfort and Rhythm',
+    text: 'trying a new position every week for a month',
+    resultLabel: 'A new position every week for a month' },
+  { id: 'morning_sex_week', audience: 'both', matchKey: 'morning_sex_week',
+    category: 'Comfort and Rhythm',
+    text: 'having morning sex every day for a week',
+    resultLabel: 'Morning sex every day for a week' },
+  { id: 'quickie_morning', audience: 'both', matchKey: 'quickie_morning',
+    category: 'Comfort and Rhythm',
+    text: 'a quickie in the morning before work',
+    resultLabel: 'A quickie in the morning before work' },
+  { id: 'mutual_masturbation', audience: 'both', matchKey: 'mutual_masturbation',
+    category: 'Comfort and Rhythm',
+    text: 'mutual masturbation while watching each other',
+    resultLabel: 'Mutual masturbation, watching each other' },
 
-  // Phase 3: Adventure and Locations
-  { id: 13, phase: 3, phaseName: "Adventure and Locations", split: false,
-    text: "having sex on a beach at night",
-    resultLabel: "Sex on a beach at night" },
-  { id: 14, phase: 3, phaseName: "Adventure and Locations", split: false,
-    text: "having sex outdoors in nature",
-    resultLabel: "Sex outdoors in nature" },
-  { id: 15, phase: 3, phaseName: "Adventure and Locations", split: false,
-    text: "having sex in a hotel pool or hot tub",
-    resultLabel: "Sex in a hotel pool or hot tub" },
-  { id: 16, phase: 3, phaseName: "Adventure and Locations", split: false,
-    text: "having sex on a balcony or rooftop",
-    resultLabel: "Sex on a balcony or rooftop" },
-  { id: 17, phase: 3, phaseName: "Adventure and Locations", split: false,
-    text: "having sex in a car",
-    resultLabel: "Sex in a car" },
-  { id: 18, phase: 3, phaseName: "Adventure and Locations", split: false,
-    text: "having sex in a tent while camping",
-    resultLabel: "Sex in a tent while camping" },
-  { id: 19, phase: 3, phaseName: "Adventure and Locations", split: false,
-    text: "having sex on a boat",
-    resultLabel: "Sex on a boat" },
-  { id: 20, phase: 3, phaseName: "Adventure and Locations", split: false,
-    text: "having sex in a sleeper train cabin",
-    resultLabel: "Sex in a sleeper train cabin" },
-  { id: 21, phase: 3, phaseName: "Adventure and Locations", split: false,
-    text: "having sex in an elevator",
-    resultLabel: "Sex in an elevator" },
-  { id: 22, phase: 3, phaseName: "Adventure and Locations", split: false,
-    text: "having sex in the back row of a movie theater",
-    resultLabel: "Sex in the back row of a movie theater" },
+  // ---- Adventure and Locations ----
+  { id: 'beach_night', audience: 'both', matchKey: 'beach_night',
+    category: 'Adventure and Locations',
+    text: 'having sex on a beach at night',
+    resultLabel: 'Sex on a beach at night' },
+  { id: 'outdoors_nature', audience: 'both', matchKey: 'outdoors_nature',
+    category: 'Adventure and Locations',
+    text: 'having sex outdoors in nature',
+    resultLabel: 'Sex outdoors in nature' },
+  { id: 'hotel_pool', audience: 'both', matchKey: 'hotel_pool',
+    category: 'Adventure and Locations',
+    text: 'having sex in a hotel pool or hot tub',
+    resultLabel: 'Sex in a hotel pool or hot tub' },
+  { id: 'balcony_rooftop', audience: 'both', matchKey: 'balcony_rooftop',
+    category: 'Adventure and Locations',
+    text: 'having sex on a balcony or rooftop',
+    resultLabel: 'Sex on a balcony or rooftop' },
+  { id: 'sex_in_car', audience: 'both', matchKey: 'sex_in_car',
+    category: 'Adventure and Locations',
+    text: 'having sex in a car',
+    resultLabel: 'Sex in a car' },
+  { id: 'sex_in_tent', audience: 'both', matchKey: 'sex_in_tent',
+    category: 'Adventure and Locations',
+    text: 'having sex in a tent while camping',
+    resultLabel: 'Sex in a tent while camping' },
+  { id: 'sex_on_boat', audience: 'both', matchKey: 'sex_on_boat',
+    category: 'Adventure and Locations',
+    text: 'having sex on a boat',
+    resultLabel: 'Sex on a boat' },
+  { id: 'sleeper_train', audience: 'both', matchKey: 'sleeper_train',
+    category: 'Adventure and Locations',
+    text: 'having sex in a sleeper train cabin',
+    resultLabel: 'Sex in a sleeper train cabin' },
+  { id: 'elevator', audience: 'both', matchKey: 'elevator',
+    category: 'Adventure and Locations',
+    text: 'having sex in an elevator',
+    resultLabel: 'Sex in an elevator' },
+  { id: 'movie_theater', audience: 'both', matchKey: 'movie_theater',
+    category: 'Adventure and Locations',
+    text: 'having sex in the back row of a movie theater',
+    resultLabel: 'Sex in the back row of a movie theater' },
 
-  // Phase 4: Outings and Venues
-  { id: 23, phase: 4, phaseName: "Outings and Venues", split: false,
-    text: "browsing a sex shop together",
-    resultLabel: "Browsing a sex shop together" },
-  { id: 24, phase: 4, phaseName: "Outings and Venues", split: false,
+  // ---- Outings and Venues ----
+  { id: 'sex_shop', audience: 'both', matchKey: 'sex_shop',
+    category: 'Outings and Venues',
+    text: 'browsing a sex shop together',
+    resultLabel: 'Browsing a sex shop together' },
+  { id: 'couples_massage', audience: 'both', matchKey: 'couples_massage',
+    category: 'Outings and Venues',
     text: "getting couples' erotic massages",
     resultLabel: "Couples' erotic massages" },
-  { id: 25, phase: 4, phaseName: "Outings and Venues", split: false,
-    text: "booking a themed fantasy hotel suite",
-    resultLabel: "A themed fantasy hotel suite" },
-  { id: 26, phase: 4, phaseName: "Outings and Venues", split: false,
-    text: "going to a strip club together",
-    resultLabel: "Going to a strip club together" },
-  { id: 27, phase: 4, phaseName: "Outings and Venues", split: false,
-    text: "visiting a clothing-optional resort",
-    resultLabel: "Visiting a clothing-optional resort" },
+  { id: 'fantasy_hotel', audience: 'both', matchKey: 'fantasy_hotel',
+    category: 'Outings and Venues',
+    text: 'booking a themed fantasy hotel suite',
+    resultLabel: 'A themed fantasy hotel suite' },
+  { id: 'strip_club', audience: 'both', matchKey: 'strip_club',
+    category: 'Outings and Venues',
+    text: 'going to a strip club together',
+    resultLabel: 'Going to a strip club together' },
+  { id: 'clothing_optional_resort', audience: 'both', matchKey: 'clothing_optional_resort',
+    category: 'Outings and Venues',
+    text: 'visiting a clothing-optional resort',
+    resultLabel: 'Visiting a clothing-optional resort' },
 
-  // Phase 5: Dressing Up, Toys, and Atmosphere
-  { id: 28, phase: 5, phaseName: "Dressing Up, Toys, and Atmosphere", split: true,
-    textHer: "wearing lingerie your partner chose for you",
-    textHim: "choosing lingerie for your partner to wear",
-    resultLabel: "Lingerie he picks out for her to wear" },
-  { id: 29, phase: 5, phaseName: "Dressing Up, Toys, and Atmosphere", split: false,
-    text: "watching porn together during sex",
-    resultLabel: "Watching porn together during sex" },
-  { id: 30, phase: 5, phaseName: "Dressing Up, Toys, and Atmosphere", split: true,
-    textHer: "getting an orgasm using a vibrator on your own while your partner watches",
-    textHim: "watching your partner get an orgasm using a vibrator on her own",
-    resultLabel: "Her using a vibrator on her own while he watches" },
-  { id: 31, phase: 5, phaseName: "Dressing Up, Toys, and Atmosphere", split: false,
-    text: "having sex in front of a mirror",
-    resultLabel: "Sex in front of a mirror" },
-  { id: 32, phase: 5, phaseName: "Dressing Up, Toys, and Atmosphere", split: false,
-    text: "trying temperature play (ice, warm wax)",
-    resultLabel: "Temperature play (ice, warm wax)" },
+  // ---- Dressing Up, Toys, and Atmosphere ----
+  { id: 'lingerie_her', audience: 'her', matchKey: 'lingerie_chosen',
+    category: 'Dressing Up, Toys, and Atmosphere',
+    text: 'wearing lingerie your partner chose for you',
+    resultLabel: 'Lingerie he picks out for her to wear' },
+  { id: 'lingerie_him', audience: 'him', matchKey: 'lingerie_chosen',
+    category: 'Dressing Up, Toys, and Atmosphere',
+    text: 'choosing lingerie for your partner to wear',
+    resultLabel: 'Lingerie he picks out for her to wear' },
+  { id: 'porn_during_sex', audience: 'both', matchKey: 'porn_during_sex',
+    category: 'Dressing Up, Toys, and Atmosphere',
+    text: 'watching porn together during sex',
+    resultLabel: 'Watching porn together during sex' },
+  { id: 'vibrator_solo_her', audience: 'her', matchKey: 'vibrator_solo_watched',
+    category: 'Dressing Up, Toys, and Atmosphere',
+    text: 'getting an orgasm using a vibrator on your own while your partner watches',
+    resultLabel: 'Her using a vibrator on her own while he watches' },
+  { id: 'vibrator_solo_him', audience: 'him', matchKey: 'vibrator_solo_watched',
+    category: 'Dressing Up, Toys, and Atmosphere',
+    text: 'watching your partner get an orgasm using a vibrator on her own',
+    resultLabel: 'Her using a vibrator on her own while he watches' },
+  { id: 'sex_in_mirror', audience: 'both', matchKey: 'sex_in_mirror',
+    category: 'Dressing Up, Toys, and Atmosphere',
+    text: 'having sex in front of a mirror',
+    resultLabel: 'Sex in front of a mirror' },
+  { id: 'temperature_play', audience: 'both', matchKey: 'temperature_play',
+    category: 'Dressing Up, Toys, and Atmosphere',
+    text: 'trying temperature play (ice, warm wax)',
+    resultLabel: 'Temperature play (ice, warm wax)' },
 
-  // Phase 6: Recording and Voyeurism
-  { id: 33, phase: 6, phaseName: "Recording and Voyeurism", split: false,
-    text: "video calling each other intimately when apart",
-    resultLabel: "Intimate video calls when apart" },
-  { id: 34, phase: 6, phaseName: "Recording and Voyeurism", split: false,
-    text: "filming yourselves having sex (kept private)",
-    resultLabel: "Filming yourselves having sex (kept private)" },
-  { id: 35, phase: 6, phaseName: "Recording and Voyeurism", split: false,
-    text: "watching your own home video together later",
-    resultLabel: "Watching your own home video together later" },
+  // ---- Recording and Voyeurism ----
+  { id: 'intimate_video_calls', audience: 'both', matchKey: 'intimate_video_calls',
+    category: 'Recording and Voyeurism',
+    text: 'video calling each other intimately when apart',
+    resultLabel: 'Intimate video calls when apart' },
+  { id: 'filming_private', audience: 'both', matchKey: 'filming_private',
+    category: 'Recording and Voyeurism',
+    text: 'filming yourselves having sex (kept private)',
+    resultLabel: 'Filming yourselves having sex (kept private)' },
+  { id: 'watching_home_video', audience: 'both', matchKey: 'watching_home_video',
+    category: 'Recording and Voyeurism',
+    text: 'watching your own home video together later',
+    resultLabel: 'Watching your own home video together later' },
 
-  // Phase 7: Power Dynamics
-  { id: 36, phase: 7, phaseName: "Power Dynamics", split: false,
-    text: "letting your partner take full control for a night",
-    resultLabel: "Letting your partner take full control for a night" },
-  { id: 37, phase: 7, phaseName: "Power Dynamics", split: false,
-    text: "taking full control of your partner for a night",
-    resultLabel: "Taking full control of your partner for a night" },
-  { id: 38, phase: 7, phaseName: "Power Dynamics", split: false,
-    text: "being told exactly what to do during sex",
-    resultLabel: "Being told exactly what to do during sex" },
-  { id: 39, phase: 7, phaseName: "Power Dynamics", split: false,
-    text: "light spanking during sex",
-    resultLabel: "Light spanking during sex" },
-  { id: 40, phase: 7, phaseName: "Power Dynamics", split: true,
-    textHer: "having your hair pulled and being kissed roughly by your partner",
-    textHim: "pulling your partner's hair and kissing her roughly",
-    resultLabel: "Hair pulling and rough kissing (him to her)" },
-  { id: 41, phase: 7, phaseName: "Power Dynamics", split: true,
-    textHer: "being blindfolded by your partner during sex",
-    textHim: "blindfolding your partner during sex",
-    resultLabel: "Him blindfolding her during sex" },
-  { id: 42, phase: 7, phaseName: "Power Dynamics", split: true,
-    textHer: "being handcuffed by your partner during sex",
-    textHim: "handcuffing your partner during sex",
-    resultLabel: "Him handcuffing her during sex" },
-  { id: 43, phase: 7, phaseName: "Power Dynamics", split: true,
-    textHer: "wearing a hidden vibrator in public while your partner controls it",
-    textHim: "controlling a hidden vibrator your partner is wearing in public",
-    resultLabel: "A hidden vibrator she wears in public, he controls it" },
-  { id: 44, phase: 7, phaseName: "Power Dynamics", split: false,
-    text: "edging and orgasm denial",
-    resultLabel: "Edging and orgasm denial" },
-  { id: 45, phase: 7, phaseName: "Power Dynamics", split: false,
-    text: "very rough sex with ravishment roleplay (consensual non-consent, with a safe word)",
-    resultLabel: "Very rough sex with ravishment roleplay (with a safe word)" },
+  // ---- Power Dynamics ----
+  { id: 'partner_full_control', audience: 'both', matchKey: 'partner_full_control',
+    category: 'Power Dynamics',
+    text: 'letting your partner take full control for a night',
+    resultLabel: 'Letting your partner take full control for a night' },
+  { id: 'you_full_control', audience: 'both', matchKey: 'you_full_control',
+    category: 'Power Dynamics',
+    text: 'taking full control of your partner for a night',
+    resultLabel: 'Taking full control of your partner for a night' },
+  { id: 'told_what_to_do', audience: 'both', matchKey: 'told_what_to_do',
+    category: 'Power Dynamics',
+    text: 'being told exactly what to do during sex',
+    resultLabel: 'Being told exactly what to do during sex' },
+  { id: 'light_spanking', audience: 'both', matchKey: 'light_spanking',
+    category: 'Power Dynamics',
+    text: 'light spanking during sex',
+    resultLabel: 'Light spanking during sex' },
+  { id: 'hair_pulling_her', audience: 'her', matchKey: 'hair_pulling',
+    category: 'Power Dynamics',
+    text: 'having your hair pulled and being kissed roughly by your partner',
+    resultLabel: 'Hair pulling and rough kissing (him to her)' },
+  { id: 'hair_pulling_him', audience: 'him', matchKey: 'hair_pulling',
+    category: 'Power Dynamics',
+    text: "pulling your partner's hair and kissing her roughly",
+    resultLabel: 'Hair pulling and rough kissing (him to her)' },
+  { id: 'blindfold_her', audience: 'her', matchKey: 'blindfold',
+    category: 'Power Dynamics',
+    text: 'being blindfolded by your partner during sex',
+    resultLabel: 'Him blindfolding her during sex' },
+  { id: 'blindfold_him', audience: 'him', matchKey: 'blindfold',
+    category: 'Power Dynamics',
+    text: 'blindfolding your partner during sex',
+    resultLabel: 'Him blindfolding her during sex' },
+  { id: 'handcuffs_her', audience: 'her', matchKey: 'handcuffs',
+    category: 'Power Dynamics',
+    text: 'being handcuffed by your partner during sex',
+    resultLabel: 'Him handcuffing her during sex' },
+  { id: 'handcuffs_him', audience: 'him', matchKey: 'handcuffs',
+    category: 'Power Dynamics',
+    text: 'handcuffing your partner during sex',
+    resultLabel: 'Him handcuffing her during sex' },
+  { id: 'hidden_vibrator_her', audience: 'her', matchKey: 'hidden_vibrator',
+    category: 'Power Dynamics',
+    text: 'wearing a hidden vibrator in public while your partner controls it',
+    resultLabel: 'A hidden vibrator she wears in public, he controls it' },
+  { id: 'hidden_vibrator_him', audience: 'him', matchKey: 'hidden_vibrator',
+    category: 'Power Dynamics',
+    text: 'controlling a hidden vibrator your partner is wearing in public',
+    resultLabel: 'A hidden vibrator she wears in public, he controls it' },
+  { id: 'edging', audience: 'both', matchKey: 'edging',
+    category: 'Power Dynamics',
+    text: 'edging and orgasm denial',
+    resultLabel: 'Edging and orgasm denial' },
+  { id: 'ravishment_roleplay', audience: 'both', matchKey: 'ravishment_roleplay',
+    category: 'Power Dynamics',
+    text: 'very rough sex with ravishment roleplay (consensual non-consent, with a safe word)',
+    resultLabel: 'Very rough sex with ravishment roleplay (with a safe word)' },
 
-  // Phase 8: Couple's Intimate Exploration
-  { id: 46, phase: 8, phaseName: "Couple's Intimate Exploration", split: false,
-    text: "trying a strap-on together",
-    resultLabel: "Trying a strap-on together" },
-  { id: 47, phase: 8, phaseName: "Couple's Intimate Exploration", split: true,
-    textHer: "receiving soft, slow anal sex from your partner (with plenty of preparation)",
-    textHim: "giving soft, slow anal sex to your partner (with plenty of preparation)",
-    resultLabel: "Soft, slow anal sex (him giving, her receiving) with plenty of preparation" },
-  { id: 48, phase: 8, phaseName: "Couple's Intimate Exploration", split: true,
-    textHer: "watching your partner have sex with a silicone sex doll while you are nearby",
-    textHim: "having sex with a silicone sex doll while your partner is nearby",
+  // ---- Couple's Intimate Exploration ----
+  { id: 'strap_on', audience: 'both', matchKey: 'strap_on',
+    category: "Couple's Intimate Exploration",
+    text: 'trying a strap-on together',
+    resultLabel: 'Trying a strap-on together' },
+  { id: 'soft_anal_her', audience: 'her', matchKey: 'soft_anal',
+    category: "Couple's Intimate Exploration",
+    text: 'receiving soft, slow anal sex from your partner (with plenty of preparation)',
+    resultLabel: 'Soft, slow anal sex (him giving, her receiving) with plenty of preparation' },
+  { id: 'soft_anal_him', audience: 'him', matchKey: 'soft_anal',
+    category: "Couple's Intimate Exploration",
+    text: 'giving soft, slow anal sex to your partner (with plenty of preparation)',
+    resultLabel: 'Soft, slow anal sex (him giving, her receiving) with plenty of preparation' },
+  { id: 'silicone_doll_her', audience: 'her', matchKey: 'silicone_doll',
+    category: "Couple's Intimate Exploration",
+    text: 'watching your partner have sex with a silicone sex doll while you are nearby',
+    resultLabel: "Him with a silicone sex doll while she's nearby" },
+  { id: 'silicone_doll_him', audience: 'him', matchKey: 'silicone_doll',
+    category: "Couple's Intimate Exploration",
+    text: 'having sex with a silicone sex doll while your partner is nearby',
     resultLabel: "Him with a silicone sex doll while she's nearby" },
 
-  // Phase 9: Multi-Partner Exploration
-  { id: 49, phase: 9, phaseName: "Multi-Partner Exploration", split: false,
-    text: "being watched by another couple while having sex",
-    resultLabel: "Being watched by another couple while having sex" },
-  { id: 50, phase: 9, phaseName: "Multi-Partner Exploration", split: false,
-    text: "soft swap (kissing and touching only) with another couple",
-    resultLabel: "Soft swap (kissing and touching only) with another couple" },
-  { id: 51, phase: 9, phaseName: "Multi-Partner Exploration", split: false,
-    text: "going to a swingers club together",
-    resultLabel: "Going to a swingers club together" },
-  { id: 52, phase: 9, phaseName: "Multi-Partner Exploration", split: false,
-    text: "having sex with your partner and another woman",
-    resultLabel: "Sex with your partner and another woman" },
-  { id: 53, phase: 9, phaseName: "Multi-Partner Exploration", split: false,
-    text: "having sex with your partner and another man",
-    resultLabel: "Sex with your partner and another man" },
-  { id: 54, phase: 9, phaseName: "Multi-Partner Exploration", split: false,
-    text: "having sex with your partner and a ladyboy",
-    resultLabel: "Sex with your partner and a ladyboy" },
+  // ---- Multi-Partner Exploration ----
+  { id: 'watched_by_couple', audience: 'both', matchKey: 'watched_by_couple',
+    category: 'Multi-Partner Exploration',
+    text: 'being watched by another couple while having sex',
+    resultLabel: 'Being watched by another couple while having sex' },
+  { id: 'soft_swap', audience: 'both', matchKey: 'soft_swap',
+    category: 'Multi-Partner Exploration',
+    text: 'soft swap (kissing and touching only) with another couple',
+    resultLabel: 'Soft swap (kissing and touching only) with another couple' },
+  { id: 'swingers_club', audience: 'both', matchKey: 'swingers_club',
+    category: 'Multi-Partner Exploration',
+    text: 'going to a swingers club together',
+    resultLabel: 'Going to a swingers club together' },
+  { id: 'plus_another_woman', audience: 'both', matchKey: 'plus_another_woman',
+    category: 'Multi-Partner Exploration',
+    text: 'having sex with your partner and another woman',
+    resultLabel: 'Sex with your partner and another woman' },
+  { id: 'plus_another_man', audience: 'both', matchKey: 'plus_another_man',
+    category: 'Multi-Partner Exploration',
+    text: 'having sex with your partner and another man',
+    resultLabel: 'Sex with your partner and another man' },
+  { id: 'plus_a_ladyboy', audience: 'both', matchKey: 'plus_a_ladyboy',
+    category: 'Multi-Partner Exploration',
+    text: 'having sex with your partner and a ladyboy',
+    resultLabel: 'Sex with your partner and a ladyboy' },
 
-  // Phase 10: Reflection
-  { id: 55, phase: 10, phaseName: "Reflection", split: false,
+  // ---- Reflection ----
+  { id: 'never_want_to_try', audience: 'both', matchKey: 'never_want_to_try',
+    category: 'Reflection',
     text: "discussing what you'd never want to try, and why",
     resultLabel: "Discussing what you'd never want to try, and why" }
 ];
+
+// Helpers — kept here so questions stay the single source of truth.
+
+window.CRAVE_QUESTIONS_BY_ID = (function () {
+  var byId = Object.create(null);
+  for (var i = 0; i < window.CRAVE_QUESTIONS.length; i++) {
+    var q = window.CRAVE_QUESTIONS[i];
+    byId[q.id] = q;
+  }
+  return byId;
+})();
+
+// Result label per matchKey (paired her/him items share the same label).
+window.CRAVE_RESULT_LABEL = (function () {
+  var byKey = Object.create(null);
+  for (var i = 0; i < window.CRAVE_QUESTIONS.length; i++) {
+    var q = window.CRAVE_QUESTIONS[i];
+    if (!byKey[q.matchKey]) byKey[q.matchKey] = q.resultLabel;
+  }
+  return byKey;
+})();
+
+// Build a per-gender deck in stable display order.
+//   gender === 'woman' → keep 'both' + 'her'
+//   gender === 'man'   → keep 'both' + 'him'
+window.craveDeckForGender = function (gender) {
+  var keepAudience = gender === 'woman' ? 'her' : 'him';
+  var out = [];
+  for (var i = 0; i < window.CRAVE_QUESTIONS.length; i++) {
+    var q = window.CRAVE_QUESTIONS[i];
+    if (q.audience === 'both' || q.audience === keepAudience) out.push(q);
+  }
+  return out;
+};

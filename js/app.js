@@ -394,6 +394,18 @@
     return _supabase;
   }
 
+  // Temporary diagnostics — see CRAVE_DEBUG in js/config.js.
+  function debugEnabled() {
+    return !!(window.CRAVE_CONFIG && window.CRAVE_CONFIG.CRAVE_DEBUG);
+  }
+  function debugLog() {
+    if (!debugEnabled()) return;
+    var args = ['[CRAVE-DEBUG]'].concat(Array.prototype.slice.call(arguments));
+    /* eslint-disable no-console */
+    console.log.apply(console, args);
+    /* eslint-enable no-console */
+  }
+
   async function rpc(fn, args) {
     var resp;
     try {
@@ -937,6 +949,14 @@
       }, TILE_ANIM_MS);
     }
 
+    debugLog('submit_answer', {
+      match_key: q.matchKey,
+      response:  response,            // 1=NO WAY, 2=NEED TO THINK, 3=MAYBE ONCE, 4=ANYTIME
+      q_id:      q.id,
+      q_index:   state.qIndex + 1,
+      total:     state.deck.length
+    });
+
     // Fire-and-forget the network write. If it fails, surface the error
     // and let the user retry from undo.
     try {
@@ -1034,6 +1054,7 @@
     if (actions) actions.hidden = true;
 
     rpc('get_results', { p_session_token: state.sessionToken }).then(function (data) {
+      debugLog('get_results payload:', data);
       emptyEl(host);
       if (!data || data.ready === false) {
         var box = document.createElement('div');
@@ -1078,6 +1099,24 @@
         empty.className = 'result-empty';
         empty.innerHTML = '<strong>No overlaps this round.</strong><p>Try a fresh set when you both feel like it.</p>';
         host.appendChild(empty);
+
+        // Diagnostics for the pairing bug. Mobile devices rarely have
+        // DevTools handy, so when the bug reproduces we surface the raw
+        // payload inline. Removable in one line by flipping CRAVE_DEBUG
+        // off in js/config.js.
+        if (debugEnabled()) {
+          var dbg = document.createElement('details');
+          dbg.className = 'result-debug';
+          dbg.innerHTML =
+            '<summary>Debug: raw get_results payload</summary>'
+            + '<pre>' + escapeHtml(JSON.stringify(data, null, 2)) + '</pre>'
+            + '<p>If both arrays are empty here, the two devices either '
+            + 'answered different match_keys (one device likely cached an '
+            + 'older deck) or one device\'s session_token belongs to a '
+            + 'pre-rewrite couple. Use "Delete all our data" and re-pair '
+            + 'with both devices reloaded.</p>';
+          host.appendChild(dbg);
+        }
       } else {
         if (anytime.length) host.appendChild(makeMatchGroup('anytime', 'Both said anytime', iconSvg('flame'), anytime));
         if (keen.length)    host.appendChild(makeMatchGroup('keen',    'Both keen',         iconSvg('heart'), keen));

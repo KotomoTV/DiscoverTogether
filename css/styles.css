@@ -894,6 +894,33 @@ a { color: var(--logo-right); }
 }
 .result-empty p { margin-top: var(--sp-2); color: var(--text-secondary); font-size: var(--fs-body); }
 
+/* Temporary — visible only while CRAVE_DEBUG is on in config.js. */
+.result-debug {
+  margin-top: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface);
+  border: 1px dashed var(--border-muted);
+  border-radius: var(--r-input);
+  color: var(--text-secondary);
+  font-size: var(--fs-caption);
+  line-height: 1.45;
+}
+.result-debug summary { color: var(--text); cursor: pointer; font-weight: 500; }
+.result-debug pre {
+  margin: var(--sp-2) 0;
+  padding: var(--sp-3);
+  background: var(--canvas);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.result-debug p { margin-top: var(--sp-2); }
+
 .result-waiting {
   background: var(--surface);
   border: 1px solid var(--border);

@@ -111,9 +111,48 @@
   }
 
   async function rpc(fn, args) {
-    var resp = await supabase().rpc(fn, args);
-    if (resp.error) throw resp.error;
+    var resp;
+    try {
+      resp = await supabase().rpc(fn, args);
+    } catch (networkErr) {
+      // Thrown for true network failures (DNS, offline, CORS preflight blocked, …).
+      networkErr.__dt_kind = 'network';
+      throw networkErr;
+    }
+    if (resp.error) {
+      // PostgrestError shape: { message, code, hint, details, status }.
+      var pgErr = resp.error;
+      pgErr.__dt_kind = 'postgrest';
+      pgErr.__dt_rpc  = fn;
+      throw pgErr;
+    }
     return resp.data;
+  }
+
+  // Turn any thrown error into a single line for the user, while making
+  // sure the full object is in console.error for DevTools inspection.
+  function describeError(err, context) {
+    /* eslint-disable no-console */
+    console.error('[DT] ' + context + ':', err);
+    if (err && err.cause)    console.error('[DT] cause:',    err.cause);
+    if (err && err.status)   console.error('[DT] status:',   err.status);
+    if (err && err.code)     console.error('[DT] code:',     err.code);
+    if (err && err.details)  console.error('[DT] details:',  err.details);
+    if (err && err.hint)     console.error('[DT] hint:',     err.hint);
+    /* eslint-enable no-console */
+
+    if (!err) return 'Unknown error.';
+
+    if (err.__dt_kind === 'network') {
+      return 'Network error: ' + (err.message || 'request failed') +
+             '. Check your connection and try again.';
+    }
+    // PostgrestError or anything with a message.
+    var bits = [];
+    if (err.message) bits.push(err.message);
+    if (err.code)    bits.push('code ' + err.code);
+    if (err.hint)    bits.push(err.hint);
+    return bits.length ? bits.join(' · ') : String(err);
   }
 
   // -----------------------------------------------------------------------
@@ -386,8 +425,7 @@
 
       showError('pin', 'Something went wrong. Try again?');
     } catch (err) {
-      console.error('prepare_join failed', err);
-      showError('pin', 'Could not connect. Check your connection and try again.');
+      showError('pin', describeError(err, 'prepare_join failed'));
     } finally {
       setBusy(btn, false);
     }
@@ -414,13 +452,16 @@
       state.pinHash = null;
       goto('how');
     } catch (err) {
-      console.error('commit_join failed', err);
       var msg = (err && (err.message || err.hint)) || '';
-      var friendly = 'Could not join right now. Please try again.';
+      var friendly;
       if (msg.indexOf('role_taken') !== -1) {
         friendly = 'That role was just taken. Go back and pick the other role.';
+        console.error('[DT] commit_join: role_taken', err);
       } else if (msg.indexOf('couple_full') !== -1) {
         friendly = 'This PIN is already used by a couple.';
+        console.error('[DT] commit_join: couple_full', err);
+      } else {
+        friendly = describeError(err, 'commit_join failed');
       }
       showError('confirm-partner', friendly);
     } finally {
@@ -485,7 +526,7 @@
       goto('question', { skipAnim: true });
       return true;
     } catch (err) {
-      console.warn('Session restore failed', err);
+      describeError(err, 'session restore failed');
       clearSession();
       return false;
     }

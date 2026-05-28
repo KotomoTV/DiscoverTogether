@@ -500,6 +500,11 @@ revoke all on public.couples from anon, authenticated;
 revoke all on public.users   from anon, authenticated;
 revoke all on public.answers from anon, authenticated;
 
+-- Anon and authenticated need USAGE on the schema to resolve the RPC
+-- functions by name. Supabase grants this by default but we re-state
+-- it so the schema is self-contained.
+grant usage on schema public to anon, authenticated;
+
 grant execute on function public.prepare_join(text, text)              to anon, authenticated;
 grant execute on function public.commit_join(text, text, text)         to anon, authenticated;
 grant execute on function public.get_my_state(text)                    to anon, authenticated;

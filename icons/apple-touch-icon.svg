@@ -1,4 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="Discover Together">
-  <rect width="180" height="180" rx="40" fill="#FBF7F4"/>
-  <path d="M90 140 C90 140 32 105 32 67 C32 47 47.5 33 65 33 C75 33 83.5 38 90 46 C96.5 38 105 33 115 33 C132.5 33 148 47 148 67 C148 105 90 140 90 140 Z" fill="#722F37"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="Crave">
+  <rect width="180" height="180" rx="40" fill="#0A0A0A"/>
+  <defs>
+    <clipPath id="crave-apple-heart">
+      <path d="M90 156 C 36 117 8 84 8 56 C 8 30 28 16 48 16 C 67 16 84 30 90 47 C 96 30 113 16 132 16 C 152 16 172 30 172 56 C 172 84 144 117 90 156 Z"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#crave-apple-heart)">
+    <rect x="0"  y="0" width="87" height="170" fill="#FF6A2C"/>
+    <rect x="93" y="0" width="87" height="170" fill="#FF2E74"/>
+  </g>
 </svg>

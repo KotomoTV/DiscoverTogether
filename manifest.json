@@ -1,13 +1,13 @@
 {
-  "name": "Discover Together",
-  "short_name": "Discover",
-  "description": "A private space for couples to explore what you both want.",
+  "name": "Crave",
+  "short_name": "Crave",
+  "description": "What do you both really want?",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#FBF7F4",
-  "theme_color": "#722F37",
+  "background_color": "#0A0A0A",
+  "theme_color": "#0A0A0A",
   "icons": [
     {
       "src": "icons/icon.svg",

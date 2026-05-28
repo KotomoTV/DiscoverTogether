@@ -27,7 +27,7 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
   />
 
-  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/styles.css?v=11" />
 </head>
 <body>
   <main class="app" id="app">
@@ -394,14 +394,17 @@
 
   </main>
 
-  <!-- App data & config -->
-  <script src="js/config.js"></script>
-  <script src="data/questions.js"></script>
+  <!-- App data & config. The ?v=… query strings force browsers to refetch
+       these files when the version bumps, so a phone that cached an
+       earlier deck doesn't end up answering different match_keys than
+       its partner. Bump v= when any of these files changes. -->
+  <script src="js/config.js?v=11"></script>
+  <script src="data/questions.js?v=11"></script>
 
   <!-- Supabase JS client (loaded from CDN; all DB access is via SECURITY DEFINER RPCs) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- App controller -->
-  <script src="js/app.js"></script>
+  <script src="js/app.js?v=11"></script>
 </body>
 </html>

@@ -391,7 +391,10 @@
         persistSession();
         // Don't carry the hash beyond commit.
         state.pinHash = null;
-        goto('how');
+        // Confirm the freshly created PIN to the user so they can share it.
+        var pinSlot = document.querySelector('#screen-pin-created [data-slot="pin-value"]');
+        if (pinSlot) pinSlot.textContent = pin;
+        goto('pin-created');
         return;
       }
 
@@ -490,6 +493,14 @@
     goto('privacy');
   }
 
+  function onPinCreatedContinue() {
+    // Wipe the displayed PIN so it isn't sitting in the DOM after the
+    // user moves on (someone might glance at their screen later).
+    var slot = document.querySelector('#screen-pin-created [data-slot="pin-value"]');
+    if (slot) slot.textContent = '';
+    goto('how');
+  }
+
   function onPrivacyContinue() {
     renderCurrentQuestion();
     goto('question');
@@ -584,6 +595,9 @@
     // Partner confirmation
     bind('[data-action="confirm-yes"]', 'click', onConfirmYes);
     bind('[data-action="confirm-no"]',  'click', onConfirmNo);
+
+    // PIN created confirmation
+    bind('[data-action="pin-created-continue"]', 'click', onPinCreatedContinue);
 
     // How / Privacy
     bind('[data-action="how-continue"]',     'click', onHowContinue);

@@ -596,30 +596,58 @@
 
   function onWelcomeStart() { goto('name'); }
 
-  // Only shown on Welcome when this device already has a local session.
-  // Lets a returning user wipe THIS device's session_token (only) and
-  // start a fresh onboarding without touching anything in the database.
-  function onWelcomeReset() {
-    if (!window.confirm('Clear this device only? Your partner\'s answers stay safe.')) return;
-    clearSession();
-    state.sessionToken = null;
-    state.name = '';
-    state.gender = null;
-    state.partnerName = null;
-    state.answers = {};
-    state.deck = [];
-    state.qIndex = 0;
-    var btn = document.querySelector('[data-action="welcome-reset"]');
-    if (btn) btn.hidden = true;
-    /* eslint-disable no-console */
-    console.info('[CRAVE] welcome: local session_token wiped on user request.');
-    /* eslint-enable no-console */
-  }
+  // The persistent "Reset this device" button in the top-right corner.
+  // Wipes LOCAL state only (localStorage + Cache API + service workers)
+  // and reloads to the bare URL so Welcome shows and assets refetch.
+  // Server data (the couple row, the partner's answers) is untouched.
+  async function onResetTap() {
+    if (!window.confirm(
+      'Reset this device? This clears your session and progress on this ' +
+      'phone and starts fresh. Your partner is not affected.'
+    )) return;
 
-  function refreshWelcomeResetVisibility() {
-    var btn = document.querySelector('[data-action="welcome-reset"]');
-    if (!btn) return;
-    btn.hidden = !loadSession();
+    /* eslint-disable no-console */
+    console.info('[CRAVE] reset: wiping local state on user request.');
+    /* eslint-enable no-console */
+
+    // 1. localStorage — drop anything Crave (and the previous-app key).
+    try {
+      var killKeys = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && (k.indexOf('crave::') === 0 || k.indexOf('discover-together::') === 0)) {
+          killKeys.push(k);
+        }
+      }
+      killKeys.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+    } catch (e) { /* private mode etc. */ }
+
+    // 2. Cache API — best-effort, defensive (we don't ship a service
+    // worker today, but if one was ever registered we don't want a
+    // stale questions.js surviving a reset).
+    try {
+      if (window.caches && caches.keys) {
+        var names = await caches.keys();
+        await Promise.all(names.map(function (n) { return caches.delete(n); }));
+      }
+    } catch (e) { /* ignore */ }
+
+    // 3. Service worker registrations — also defensive.
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        var regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(function (r) { return r.unregister(); }));
+      }
+    } catch (e) { /* ignore */ }
+
+    // 4. Strip URL state and reload to the bare path. `replace` so the
+    // back button cannot return to a dirty URL.
+    try {
+      var base = window.location.pathname + (window.location.pathname.indexOf('?') === -1 ? '' : '');
+      window.location.replace(base);
+    } catch (e) {
+      window.location.reload();
+    }
   }
 
   function onNameInput(e) {
@@ -1286,10 +1314,11 @@
     // Logos
     mountLogos();
 
+    // Persistent reset (floating top-right; visible on every screen).
+    $$('[data-action="reset"]').forEach(function (b) { b.addEventListener('click', onResetTap); });
+
     // Welcome
     $('[data-action="welcome-start"]').addEventListener('click', onWelcomeStart);
-    $('[data-action="welcome-reset"]').addEventListener('click', onWelcomeReset);
-    refreshWelcomeResetVisibility();
 
     // Name
     var nameInput = $('#input-name');

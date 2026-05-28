@@ -139,6 +139,7 @@ a { color: var(--logo-right); }
    ------------------------------------------------------------------------- */
 
 .app {
+  position: relative;          /* anchor for the floating .app-reset */
   max-width: var(--max-w);
   margin: 0 auto;
   min-height: 100vh;
@@ -151,6 +152,34 @@ a { color: var(--logo-right); }
   display: flex;
   flex-direction: column;
   background: var(--canvas);
+}
+
+/* Persistent reset control — sits in the same top-right corner on every
+   screen. Quiet styling so it never competes with the primary CTA. */
+.app-reset {
+  position: absolute;
+  top:   max(var(--sp-3), env(safe-area-inset-top));
+  right: max(var(--sp-3), env(safe-area-inset-right));
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--t-base) var(--ease), background var(--t-base) var(--ease);
+}
+.app-reset:hover  { color: var(--text-secondary); background: var(--surface); }
+.app-reset:active { transform: scale(0.94); }
+.app-reset:focus-visible {
+  outline: 2px solid var(--focus-border);
+  outline-offset: 2px;
 }
 
 .screen {
@@ -187,21 +216,26 @@ a { color: var(--logo-right); }
    Top bar (logo lockup + optional back/share icon)
    ------------------------------------------------------------------------- */
 
+/* Top bar: left-aligned cluster (back + brand) sits flush left so the
+   top-right corner stays clear for the persistent .app-reset. */
 .top-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--sp-3);
-  min-height: 28px;
+  min-height: 36px;
+  padding-right: 44px;   /* keep content from sliding under .app-reset */
+}
+
+.top-bar-left {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
 }
 
 .top-bar--question {
-  /* On the question screen, undo lives top-left so the eyeline reads
-     [undo] [logo lockup] [progress]. */
-  display: grid;
-  grid-template-columns: 36px 1fr auto;
-  align-items: center;
-  gap: var(--sp-3);
+  /* Same shape as .top-bar — the [back][brand] cluster is on the left,
+     the right side is reserved for .app-reset. */
+  padding-right: 44px;
 }
 
 .brand-lockup {
@@ -639,6 +673,15 @@ a { color: var(--logo-right); }
    ------------------------------------------------------------------------- */
 
 .screen--question { gap: var(--sp-4); }
+
+/* Row that holds the question progress count — sits just above the
+   progress bar, leaving the top-right corner clear for .app-reset. */
+.q-meta {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: calc(var(--sp-2) * -1);   /* visually tighten under the top-bar */
+}
 
 .q-count {
   font-size: var(--fs-caption);
